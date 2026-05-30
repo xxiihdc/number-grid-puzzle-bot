@@ -71,6 +71,18 @@ python3 run_bot.py train \
 Run summaries are written under `training_runs/` and updated after every completed
 generation.
 
+## Sync and Use the Newest Weights
+
+```bash
+python3 scripts/sync_latest_weights.py
+```
+
+The sync script promotes the newest summary containing a trained chromosome into
+`training_runs/active_chromosome.json`. Both `python3 run_bot.py` and
+`python3 run_bot.py train` run this sync automatically before starting. Game mode loads
+the promoted chromosome into Expectimax, while a new training run preserves it as the
+baseline genome and initializes the remaining population around it.
+
 ## Run Focused Checks
 
 ```bash
@@ -93,7 +105,7 @@ elapsed time with multiple workers on a multi-core target machine.
 Initial implementation benchmark on the target development machine:
 
 ```text
-single=0.935s parallel=0.543s workers=2 speedup=41.9% target=30.0%
+single=1.985s parallel=1.192s workers=2 speedup=39.9% target=30.0%
 ```
 
 ## Normal Game Mode

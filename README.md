@@ -98,6 +98,17 @@ Run summaries are written under `training_runs/`. Reevaluate the recorded best g
 python3 run_bot.py replay training_runs/<summary-file>.json
 ```
 
+Before play or training, the application automatically promotes the newest summary with
+a trained chromosome into `training_runs/active_chromosome.json`. You can also run the
+sync step explicitly:
+
+```bash
+python3 scripts/sync_latest_weights.py
+```
+
+Normal play loads the active chromosome automatically. A new training run keeps that
+chromosome as its baseline genome and initializes the remaining population around it.
+
 ### To run tests:
 ```bash
 python test_bot.py
@@ -110,6 +121,7 @@ python3 test_training_ui.py
 python3 test_training_cli.py
 python3 test_training_records.py
 python3 test_training_replay.py
+python3 test_training_weights.py
 python3 test_training_performance.py
 ```
 

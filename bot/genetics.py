@@ -217,7 +217,8 @@ class GeneticOptimizer:
                  mutation_rate: float = 0.05,
                  tournament_size: int = 3,
                  config=None,
-                 scenarios=None):
+                 scenarios=None,
+                 initial_chromosome=None):
         """
         Initialize the genetic optimizer.
 
@@ -242,6 +243,7 @@ class GeneticOptimizer:
         self.inject_count = config.inject_count if config else 0
         self.worker_count = config.worker_count if config else 1
         self.variance_penalty = config.variance_penalty if config else 0.0
+        self.initial_chromosome = initial_chromosome
 
         # Get number of features from feature pool
         self.num_features = len(feature_pool.get_feature_names())
@@ -259,8 +261,22 @@ class GeneticOptimizer:
         self._initialize_population()
 
     def _initialize_population(self):
-        """Create initial population with random chromosomes."""
+        """Create a random population or continue around the active chromosome."""
         self.population = []
+        if self.initial_chromosome is not None:
+            self.population.append(self.initial_chromosome.copy())
+            while len(self.population) < self.population_size:
+                chromosome = self.initial_chromosome.copy()
+                for phase_genes in chromosome.genes:
+                    for gene in phase_genes:
+                        if random.random() < 0.5:
+                            gene.weight += random.gauss(0, 10)
+                            gene.weight = max(-100.0, min(100.0, gene.weight))
+                        if random.random() < 0.10:
+                            gene.mask = 1 - gene.mask
+                self.population.append(chromosome)
+            return
+
         for _ in range(self.population_size):
             chromosome = Chromosome(self.num_features)
             # Initialize with random masks and weights

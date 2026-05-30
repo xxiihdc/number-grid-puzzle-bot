@@ -31,6 +31,7 @@ def test_short_run_writes_completed_summary():
         assert len(summary["generation_summaries"]) == 1
         assert summary["best_chromosome"]
         assert summary["best_fitness"] is not None
+        assert os.path.exists(os.path.join(temp_dir, "active_chromosome.json"))
 
 
 def _config_for(dataset_path):

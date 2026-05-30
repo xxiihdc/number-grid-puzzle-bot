@@ -16,6 +16,7 @@ from genetics import Chromosome
 from scoring import evaluate_board
 from training_config import TrainingConfig
 from training_data import GameplayScenario, compare_dataset_overlap, load_dataset
+from training_weights import load_active_chromosome, sync_latest_weights
 
 
 @dataclass(frozen=True)
@@ -208,8 +209,12 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
     }
     _write_json_atomic(path, record)
     scenarios = training_dataset.scenarios[:config.games_per_genome]
+    active_model_path = str(Path(output_directory) / "active_chromosome.json")
+    sync_latest_weights(output_directory, active_model_path)
+    initial_chromosome = load_active_chromosome(active_model_path)
     optimizer = GeneticOptimizer(
-        FeaturePool(), ExpectimaxSearch(FeaturePool()), config=config, scenarios=scenarios
+        FeaturePool(), ExpectimaxSearch(FeaturePool()), config=config, scenarios=scenarios,
+        initial_chromosome=initial_chromosome,
     )
     try:
         for generation_number in range(1, config.generations + 1):
@@ -248,6 +253,7 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
             record["validation_fitness"] = validation.fitness
         _update_record(path, record, status="completed", completed_at=_now(),
                        stop_reason="max_generations")
+        sync_latest_weights(output_directory, active_model_path)
     except KeyboardInterrupt:
         _update_record(path, record, status="interrupted", completed_at=_now(),
                        stop_reason="keyboard_interrupt")
