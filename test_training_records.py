@@ -32,6 +32,13 @@ def test_short_run_writes_completed_summary():
         assert summary["best_chromosome"]
         assert summary["best_fitness"] is not None
         assert os.path.exists(os.path.join(temp_dir, "active_chromosome.json"))
+        diagnostics = summary["generation_summaries"][0]["plateau_diagnostics"]
+        assert diagnostics["unique_chromosome_count"] >= 1
+        assert 0 < diagnostics["chromosome_diversity_ratio"] <= 1
+        assert diagnostics["active_gene_count_min"] <= diagnostics["active_gene_count_average"]
+        assert diagnostics["active_gene_count_average"] <= diagnostics["active_gene_count_max"]
+        assert diagnostics["no_improvement_generations"] == 0
+        assert diagnostics["adaptive_mutation_surge"] is False
 
 
 def _config_for(dataset_path):

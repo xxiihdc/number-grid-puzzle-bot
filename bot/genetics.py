@@ -72,6 +72,8 @@ class Chromosome:
         Calculate fitness (heuristic value) for a game state using this chromosome's weights.
         Implements: H(state) = Σ(Mask_i × Weight_i × f_i(state)) for each phase
         """
+        self.normalize_feature_count(len(feature_pool.get_feature_names()))
+
         # Determine current game phase based on turn number
         turn = state.turn_number
         if turn < 10:
@@ -92,6 +94,20 @@ class Chromosome:
             total += gene.mask * gene.weight * feature_value
 
         return total
+
+    def normalize_feature_count(self, expected_count: int) -> None:
+        """Append neutral genes for new features while rejecting lossy downgrades."""
+        if self.num_features > expected_count:
+            raise ValueError(
+                f"Chromosome has more features ({self.num_features}) than the active "
+                f"feature pool ({expected_count})"
+            )
+        if self.num_features == expected_count:
+            return
+        missing_count = expected_count - self.num_features
+        for phase_genes in self.genes:
+            phase_genes.extend(Gene(mask=0, weight=0.0) for _ in range(missing_count))
+        self.num_features = expected_count
 
     def get_all_features_fitness(self, states: List[GameState],
                                 feature_pool: FeaturePool) -> float:
@@ -247,6 +263,8 @@ class GeneticOptimizer:
 
         # Get number of features from feature pool
         self.num_features = len(feature_pool.get_feature_names())
+        if self.initial_chromosome is not None:
+            self.initial_chromosome.normalize_feature_count(self.num_features)
 
         # Population storage
         self.population: List[Chromosome] = []
@@ -376,6 +394,35 @@ class GeneticOptimizer:
                 new_population.append(child2)
 
         self.population = new_population
+
+    def get_plateau_diagnostics(self) -> Dict[str, object]:
+        """Summarize population convergence without changing evolution behavior."""
+        signatures = []
+        active_gene_counts = []
+        for chromosome in self.population:
+            signatures.append(tuple(
+                (gene.mask, gene.weight)
+                for phase_genes in chromosome.genes
+                for gene in phase_genes
+            ))
+            active_gene_counts.append(sum(
+                gene.mask
+                for phase_genes in chromosome.genes
+                for gene in phase_genes
+            ))
+        population_size = len(self.population)
+        unique_count = len(set(signatures))
+        return {
+            "unique_chromosome_count": unique_count,
+            "chromosome_diversity_ratio": unique_count / population_size if population_size else 0.0,
+            "active_gene_count_min": min(active_gene_counts, default=0),
+            "active_gene_count_average": (
+                sum(active_gene_counts) / population_size if population_size else 0.0
+            ),
+            "active_gene_count_max": max(active_gene_counts, default=0),
+            "no_improvement_generations": self.generation_no_improvement,
+            "adaptive_mutation_surge": self.generation_no_improvement >= 3,
+        }
 
     def train(self):
         """Run the complete genetic algorithm training process."""

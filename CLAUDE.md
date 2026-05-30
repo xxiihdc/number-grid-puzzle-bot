@@ -88,7 +88,7 @@ VII. Action Space Reduction
 6. Proceed with feature implementation following test-first approach
 
 <!-- SPECKIT START -->
-active_plan: specs/004-optimize-training-workflow/plan.md
+active_plan: specs/005-training-plateau-features/plan.md
 <!-- SPECKIT END -->
 
 ## Performance Targets

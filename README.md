@@ -12,7 +12,7 @@ matrix/
 │   ├── game_state.py    # Game state representation and logic
 │   ├── expectimax.py    # Expectimax search implementation
 │   ├── genetics.py      # Genetic algorithm for heuristic optimization
-│   └── features.py      # Feature extraction (15 features from design doc)
+│   └── features.py      # Feature extraction for inference and training
 ├── utils/               # Utility functions
 ├── tests/               # Test files
 ├── config/              # Configuration files
@@ -25,7 +25,7 @@ matrix/
 1. **Game State Representation**: 9x9 grid with 3x1 vertical blocks using 1D array for cache efficiency
 2. **Expectimax Search**: With dynamic depth based on game phase (depth 2 for turns 1-10, depth 3 for turns 11-20, depth 4 for turns 21-27)
 3. **Local Ray-casting Scoring**: O(1) scoring algorithm that only checks lines through newly placed blocks
-4. **Feature Pool**: All 15 features from the design document implemented:
+4. **Feature Pool**: The original 15 features plus generalized line-window signals:
    - Actual score
    - Potential horizontal/diagonal pairs
    - Column bumpiness
@@ -36,6 +36,9 @@ matrix/
    - Vertical match interfaces
    - Empty slots count
    - Diagonal cross points
+   - Open one-match and two-match three-cell windows in all scoring directions
+   - Blocked three-cell windows
+   - Empty cells that can complete multiple lines
 5. **Genetic Algorithm Optimizer**: With advanced techniques:
    - Common Random Numbers (CRN) for reduced noise
    - Adaptive Mutation Surge
@@ -106,7 +109,9 @@ python3 scripts/plot_training_log.py training_runs/<summary-file>.json
 ```
 
 The same command works while training is still running because summaries are persisted
-after every generation. To save a chart without opening a graphical window:
+after every generation. New summaries also record population diversity, active-gene
+statistics, no-improvement streaks, and adaptive mutation surge state for plateau
+analysis. To save a chart without opening a graphical window:
 
 ```bash
 python3 scripts/plot_training_log.py training_runs/<summary-file>.json \

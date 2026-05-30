@@ -28,6 +28,7 @@ def load_generation_series(path: str):
         if not isinstance(generation, dict) or any(key not in generation for key in required):
             raise ValueError(f"Generation entry {index} is missing required fitness fields")
 
+    diagnostics = [item.get("plateau_diagnostics", {}) for item in generations]
     return {
         "run_id": str(payload.get("run_id", summary_path.stem)),
         "status": str(payload.get("status", "unknown")),
@@ -35,6 +36,15 @@ def load_generation_series(path: str):
         "best": [float(item["best_fitness"]) for item in generations],
         "average": [float(item["average_fitness"]) for item in generations],
         "minimum": [float(item["minimum_fitness"]) for item in generations],
+        "diversity_ratio": [
+            item.get("chromosome_diversity_ratio") for item in diagnostics
+        ],
+        "no_improvement_generations": [
+            item.get("no_improvement_generations") for item in diagnostics
+        ],
+        "adaptive_mutation_surge": [
+            item.get("adaptive_mutation_surge") for item in diagnostics
+        ],
     }
 
 

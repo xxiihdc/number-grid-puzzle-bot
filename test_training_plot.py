@@ -44,6 +44,31 @@ def test_training_chart_can_be_saved_headlessly():
         assert os.path.getsize(output_path) > 0
 
 
+def test_optional_plateau_diagnostics_are_loaded():
+    payload = {
+        "generation_summaries": [{
+            "generation_number": 1,
+            "best_fitness": 300.0,
+            "average_fitness": 200.0,
+            "minimum_fitness": 100.0,
+            "plateau_diagnostics": {
+                "chromosome_diversity_ratio": 0.75,
+                "no_improvement_generations": 2,
+                "adaptive_mutation_surge": False,
+            },
+        }],
+    }
+    with tempfile.TemporaryDirectory() as temp_dir:
+        summary_path = os.path.join(temp_dir, "summary.json")
+        with open(summary_path, "w", encoding="utf-8") as output:
+            json.dump(payload, output)
+        series = load_generation_series(summary_path)
+    assert series["diversity_ratio"] == [0.75]
+    assert series["no_improvement_generations"] == [2]
+    assert series["adaptive_mutation_surge"] == [False]
+
+
 if __name__ == "__main__":
     test_training_chart_can_be_saved_headlessly()
+    test_optional_plateau_diagnostics_are_loaded()
     print("PASS: training plot checks")

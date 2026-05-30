@@ -230,6 +230,7 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
                 "average_fitness": sum(fitness for _, fitness in evaluated) / len(evaluated),
                 "minimum_fitness": evaluated[-1][1],
                 "best_chromosome": evaluated[0][0].to_payload(),
+                "plateau_diagnostics": optimizer.get_plateau_diagnostics(),
             }
             if len(evaluated) != config.population_size:
                 raise RuntimeError("Incomplete generation cannot be committed")

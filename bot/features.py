@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Feature extraction module for the Number Grid Puzzle Bot.
-Implements all 15 features from the feature pool as described in the design document.
+Implements the heuristic feature pool used by inference and offline training.
 """
 
 import numpy as np
@@ -13,7 +13,7 @@ class FeaturePool:
     """Extracts features from game state for heuristic evaluation."""
 
     def __init__(self):
-        """Initialize the feature pool with all 15 features."""
+        """Initialize the feature pool with all supported features."""
         self.feature_names = [
             "f1_actual_score",
             "f2_potential_horizontal_pairs",
@@ -29,7 +29,11 @@ class FeaturePool:
             "f12_number_density_10",
             "f13_vertical_match_interfaces",
             "f14_empty_slots_count",
-            "f15_diagonal_cross_points"
+            "f15_diagonal_cross_points",
+            "f16_open_single_windows",
+            "f17_open_pair_windows",
+            "f18_blocked_windows",
+            "f19_multi_line_completion_cells",
         ]
         self.num_features = len(self.feature_names)
 
@@ -39,7 +43,7 @@ class FeaturePool:
 
     def extract_all_features(self, state: GameState) -> Dict[str, float]:
         """
-        Extract all 15 features from the game state.
+        Extract all features from the game state.
         Returns a dictionary mapping feature names to their values.
         """
         features = {}
@@ -90,7 +94,54 @@ class FeaturePool:
         # f15_diagonal_cross_points: Strategic empty slots where diagonals cross
         features["f15_diagonal_cross_points"] = self._count_diagonal_cross_points(grid_2d)
 
+        line_windows = self._calculate_line_window_metrics(grid_2d)
+        features["f16_open_single_windows"] = line_windows["open_single_windows"]
+        features["f17_open_pair_windows"] = line_windows["open_pair_windows"]
+        features["f18_blocked_windows"] = line_windows["blocked_windows"]
+        features["f19_multi_line_completion_cells"] = line_windows["multi_line_completion_cells"]
+
         return features
+
+    def _calculate_line_window_metrics(self, grid: np.ndarray) -> Dict[str, float]:
+        """Count exact three-cell scoring windows in all four line directions."""
+        height, width = grid.shape
+        open_single_windows = 0
+        open_pair_windows = 0
+        blocked_windows = 0
+        completion_counts = {}
+        directions = ((1, 0), (0, 1), (1, 1), (1, -1))
+
+        for dx, dy in directions:
+            for y in range(height):
+                for x in range(width):
+                    end_x = x + 2 * dx
+                    end_y = y + 2 * dy
+                    if not (0 <= end_x < width and 0 <= end_y < height):
+                        continue
+                    coordinates = [(x + offset * dx, y + offset * dy) for offset in range(3)]
+                    values = [grid[cell_y, cell_x] for cell_x, cell_y in coordinates]
+                    filled = [value for value in values if value != 0]
+                    empty_coordinates = [
+                        coordinate for coordinate, value in zip(coordinates, values) if value == 0
+                    ]
+                    distinct_values = set(filled)
+                    if len(distinct_values) > 1:
+                        blocked_windows += 1
+                    elif len(filled) == 1:
+                        open_single_windows += 1
+                    elif len(filled) == 2 and len(empty_coordinates) == 1:
+                        open_pair_windows += 1
+                        coordinate = empty_coordinates[0]
+                        completion_counts[coordinate] = completion_counts.get(coordinate, 0) + 1
+
+        return {
+            "open_single_windows": float(open_single_windows),
+            "open_pair_windows": float(open_pair_windows),
+            "blocked_windows": float(blocked_windows),
+            "multi_line_completion_cells": float(sum(
+                count >= 2 for count in completion_counts.values()
+            )),
+        }
 
     def _count_horizontal_pairs(self, grid: np.ndarray) -> float:
         """

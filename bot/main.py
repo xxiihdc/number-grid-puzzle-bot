@@ -25,7 +25,7 @@ def run_play_mode():
     # Initialize game state
     game_state = GameState()
 
-    # Initialize feature pool (15 features from design doc)
+    # Initialize the shared inference and offline-training feature pool.
     feature_pool = FeaturePool()
 
     # Initialize Expectimax search
