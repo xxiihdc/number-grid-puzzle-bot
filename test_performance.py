@@ -6,7 +6,7 @@ import random
 import sys
 import time
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 # Add the bot directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "bot"))
@@ -27,6 +27,7 @@ class MoveTiming:
     completed_depth: int
     target_depth: int
     fallback_used: bool
+    fallback_reason: Optional[str]
 
 
 def _target_depth(turn: int) -> int:
@@ -72,13 +73,14 @@ def run_performance_gate() -> List[MoveTiming]:
                     completed_depth=stats.completed_depth,
                     target_depth=stats.target_depth,
                     fallback_used=stats.fallback_used,
+                    fallback_reason=stats.fallback_reason,
                 )
             )
             print(
                 f"game={game_number:02d} turn={turn:02d} "
                 f"elapsed={elapsed * 1000:7.2f}ms "
                 f"depth={stats.completed_depth}/{stats.target_depth} "
-                f"fallback={stats.fallback_used}"
+                f"fallback={stats.fallback_used} reason={stats.fallback_reason}"
             )
             state.make_move(slot, block)
 

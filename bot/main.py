@@ -73,7 +73,8 @@ def play_game(game_state: GameState, search_engine: ExpectimaxSearch):
             f"Search took {stats.elapsed_seconds * 1000:.2f}ms "
             f"(depth {stats.completed_depth}/{stats.target_depth}, "
             f"nodes={stats.nodes_evaluated}, cache={stats.cache_entries}, "
-            f"timeout={stats.timed_out}, fallback={stats.fallback_used})"
+            f"timeout={stats.timed_out}, fallback={stats.fallback_used}, "
+            f"reason={stats.fallback_reason})"
         )
         print(f"Best slot: {best_slot} (Expected score: {expected_score:.2f})")
 

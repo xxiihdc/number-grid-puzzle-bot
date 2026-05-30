@@ -13,7 +13,16 @@ python3 run_bot.py
 ```
 
 Each turn prints the spawned block, selected slot, elapsed move-selection time, completed
-depth, target depth, node count, cache size, timeout state, and fallback state.
+depth, target depth, node count, cache size, timeout state, fallback state, and fallback
+reason.
+
+When fallback occurs, the search engine also appends a structured event to
+`inference_performance.log`. Override the location with `BOT_INFERENCE_LOG_PATH` when
+running experiments:
+
+```bash
+BOT_INFERENCE_LOG_PATH=/private/tmp/inference.log python3 run_bot.py
+```
 
 ## Run Functional Checks
 

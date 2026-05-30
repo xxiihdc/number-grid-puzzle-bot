@@ -2,6 +2,8 @@
 """Budgeted Expectimax search for real-time game-mode move selection."""
 
 import math
+import logging
+import os
 import random
 import time
 import zlib
@@ -24,6 +26,7 @@ class SearchStats:
     completed_depth: int
     timed_out: bool
     fallback_used: bool
+    fallback_reason: Optional[str]
     nodes_evaluated: int
     cache_entries: int
 
@@ -54,7 +57,9 @@ class ExpectimaxSearch:
         self._chromosome = None
         self._deadline: Optional[float] = None
         self.timeout_occurred = False
-        self._last_search_stats = SearchStats(0.0, 0, 0, False, False, 0, 0)
+        self._last_search_stats = SearchStats(
+            0.0, 0, 0, False, False, None, 0, 0
+        )
 
     def search(self, state: GameState, block_values: Sequence[int], depth: int,
                timeout: Optional[float] = DEFAULT_TIMEOUT) -> Tuple[Optional[Slot], float]:
@@ -75,7 +80,7 @@ class ExpectimaxSearch:
         block = self._normalize_block(block_values)
         valid_slots = state.get_valid_slots()
         if not valid_slots:
-            self._record_stats(started, target_depth, 0)
+            self._record_stats(started, target_depth, 0, "no_valid_slots")
             return None, 0.0
 
         working_state = state.copy()
@@ -106,7 +111,10 @@ class ExpectimaxSearch:
         if self._deadline is not None and time.perf_counter() >= self._deadline:
             self.timeout_occurred = completed_depth < target_depth
 
-        self._record_stats(started, target_depth, completed_depth)
+        fallback_reason = "deadline_exceeded" if self.timeout_occurred else None
+        self._record_stats(started, target_depth, completed_depth, fallback_reason)
+        if self._last_search_stats.fallback_used:
+            self._log_fallback(state, block, best_slot)
         return best_slot, best_value
 
     def _search_root(self, state: GameState, block: Block,
@@ -245,15 +253,48 @@ class ExpectimaxSearch:
         return block
 
     def _record_stats(self, started: float, target_depth: int,
-                      completed_depth: int) -> None:
+                      completed_depth: int,
+                      fallback_reason: Optional[str] = None) -> None:
+        fallback_used = completed_depth < target_depth
         self._last_search_stats = SearchStats(
             elapsed_seconds=time.perf_counter() - started,
             target_depth=target_depth,
             completed_depth=completed_depth,
             timed_out=self.timeout_occurred,
-            fallback_used=completed_depth < target_depth,
+            fallback_used=fallback_used,
+            fallback_reason=fallback_reason if fallback_used else None,
             nodes_evaluated=self.nodes_evaluated,
             cache_entries=len(self.transposition_table),
+        )
+
+    def _log_fallback(self, state: GameState, block: Block,
+                      selected_slot: Optional[Slot]) -> None:
+        """Append one structured fallback event without configuring global logging."""
+        stats = self._last_search_stats
+        logger = logging.getLogger("bot.inference.fallback")
+        if not logger.handlers:
+            log_path = os.environ.get(
+                "BOT_INFERENCE_LOG_PATH", "inference_performance.log"
+            )
+            handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+            handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+            logger.propagate = False
+
+        logger.info(
+            "event=fallback turn=%d block=%s slot=%s reason=%s "
+            "elapsed_ms=%.2f completed_depth=%d target_depth=%d "
+            "nodes=%d cache_entries=%d",
+            state.turn_number + 1,
+            block,
+            selected_slot,
+            stats.fallback_reason,
+            stats.elapsed_seconds * 1000,
+            stats.completed_depth,
+            stats.target_depth,
+            stats.nodes_evaluated,
+            stats.cache_entries,
         )
 
     def _evaluate_state(self, state: GameState) -> float:

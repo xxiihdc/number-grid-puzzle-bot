@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Focused functional checks for the Number Grid Puzzle Bot."""
 
+import logging
 import os
 import random
 import sys
+import tempfile
 
 # Add the bot directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "bot"))
@@ -89,6 +91,41 @@ def test_expectimax_timeout_returns_valid_fallback() -> None:
     assert stats.completed_depth == 1
     assert stats.timed_out
     assert stats.fallback_used
+    assert stats.fallback_reason == "deadline_exceeded"
+
+
+def test_expectimax_fallback_writes_structured_log() -> None:
+    """Fallback diagnostics must be persisted for algorithm analysis."""
+    state = GameState()
+    search_engine = ExpectimaxSearch(FeaturePool())
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        log_path = os.path.join(temp_dir, "inference.log")
+        original_log_path = os.environ.get("BOT_INFERENCE_LOG_PATH")
+        os.environ["BOT_INFERENCE_LOG_PATH"] = log_path
+        logger = logging.getLogger("bot.inference.fallback")
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+            handler.close()
+
+        try:
+            search_engine.search(state, (7, 8, 9), depth=5, timeout=0.0)
+            for handler in logger.handlers:
+                handler.flush()
+            with open(log_path, encoding="utf-8") as log_file:
+                log_contents = log_file.read()
+        finally:
+            for handler in logger.handlers[:]:
+                logger.removeHandler(handler)
+                handler.close()
+            if original_log_path is None:
+                os.environ.pop("BOT_INFERENCE_LOG_PATH", None)
+            else:
+                os.environ["BOT_INFERENCE_LOG_PATH"] = original_log_path
+
+    assert "event=fallback" in log_contents
+    assert "reason=deadline_exceeded" in log_contents
+    assert "completed_depth=1 target_depth=5" in log_contents
 
 
 def test_last_slot_returns_promptly() -> None:
@@ -133,6 +170,7 @@ if __name__ == "__main__":
         test_features,
         test_expectimax_preserves_state,
         test_expectimax_timeout_returns_valid_fallback,
+        test_expectimax_fallback_writes_structured_log,
         test_last_slot_returns_promptly,
         test_complete_game_packing,
     ]

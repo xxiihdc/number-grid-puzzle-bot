@@ -39,12 +39,14 @@ Describes the latest search call.
 - `completed_depth`
 - `timed_out`
 - `fallback_used`
+- `fallback_reason`
 - `nodes_evaluated`
 - `cache_entries`
 
 **Validation rules**:
 - `completed_depth` is at least 1 when a valid move exists.
 - `fallback_used` is true when search returns before completing `target_depth`.
+- `fallback_reason` records why the last completed iteration was returned.
 - `cache_entries` never exceeds the configured cache limit.
 
 ### PerformanceValidationRun
