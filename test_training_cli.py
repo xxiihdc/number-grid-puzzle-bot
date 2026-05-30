@@ -38,8 +38,14 @@ def test_non_interactive_requires_dataset():
         raise AssertionError("Expected missing training dataset rejection")
 
 
+def test_replay_accepts_validation_dataset():
+    args = build_parser().parse_args(["replay", "summary.json", "--dataset", "validation"])
+    assert args.dataset == "validation"
+
+
 if __name__ == "__main__":
     test_train_flags_build_config()
     test_default_mode_is_play()
     test_non_interactive_requires_dataset()
+    test_replay_accepts_validation_dataset()
     print("PASS: training CLI checks")

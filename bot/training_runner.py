@@ -266,16 +266,27 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
     return path
 
 
-def replay_run(summary_path: str) -> CandidateEvaluation:
-    """Reevaluate the recorded best chromosome against its training scenarios."""
+def replay_run(summary_path: str, dataset_purpose: str = "training") -> CandidateEvaluation:
+    """Reevaluate the recorded best chromosome against a recorded dataset."""
     record = json.loads(Path(summary_path).read_text(encoding="utf-8"))
     if not record.get("best_chromosome"):
         raise ValueError("Run summary does not contain a best chromosome")
     config_payload = record["config"]
-    dataset_path = config_payload["training_dataset_path"]
+    if dataset_purpose == "training":
+        dataset_path = config_payload["training_dataset_path"]
+    elif dataset_purpose == "validation":
+        dataset_path = config_payload.get("validation_dataset_path")
+        if not dataset_path:
+            raise ValueError("Run summary does not reference a validation dataset")
+    else:
+        raise ValueError("dataset_purpose must be training or validation")
     dataset = load_dataset(dataset_path)
     chromosome = Chromosome.from_payload(record["best_chromosome"])
-    scenarios = dataset.scenarios[:config_payload["games_per_genome"]]
+    scenarios = (
+        dataset.scenarios[:config_payload["games_per_genome"]]
+        if dataset_purpose == "training"
+        else dataset.scenarios
+    )
     return calculate_candidate_evaluation(
         0, chromosome, scenarios, config_payload["variance_penalty"]
     )

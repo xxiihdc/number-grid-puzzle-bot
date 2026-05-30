@@ -38,6 +38,9 @@ active-gene statistics, no-improvement streak, and surge state.
 - [x] T013 Update heuristic feature documentation in `README.md`
 - [x] T014 Run focused regression checks: `python3 test_training_features.py`, `python3 test_training_weights.py`, `python3 test_training_records.py`, `python3 test_training_replay.py`, `python3 test_training_parallel.py`, `python3 test_training_plot.py`, `python3 test_bot.py`, and `python3 test_training_feature_performance.py`
 - [x] T015 Record benchmark result and plateau explanation in `specs/005-training-plateau-features/quickstart.md`
+- [x] T016 Add validation-dataset replay support for interrupted best chromosomes in `bot/cli.py`, `bot/training_runner.py`, `test_training_cli.py`, and `test_training_replay.py`
+- [x] T017 Replace continuous adaptive mutation surge with cooldown pulses in `bot/genetics.py` and add policy checks in `test_training_mutation.py`
+- [x] T018 Replay the interrupted `578.6131` best against its full validation dataset and record the result in `specs/005-training-plateau-features/quickstart.md`
 
 ## Dependencies & Execution Order
 

@@ -224,6 +224,8 @@ class GeneticOptimizer:
     - Phase-based Genomes
     - Feature Pool with Binary Masking
     """
+    ADAPTIVE_SURGE_START = 3
+    ADAPTIVE_SURGE_INTERVAL = 4
 
     def __init__(self, feature_pool: FeaturePool,
                  search_engine,
@@ -360,7 +362,7 @@ class GeneticOptimizer:
     def evolve_from_evaluated(self, evaluated):
         """Create the next generation from a complete ranked evaluation."""
         # Check for adaptive mutation surge
-        adaptive_surge = (self.generation_no_improvement >= 3)
+        adaptive_surge = self.should_use_adaptive_surge()
         if adaptive_surge:
             print("*** ADAPTIVE MUTATION SURGE ACTIVE ***")
 
@@ -395,6 +397,14 @@ class GeneticOptimizer:
 
         self.population = new_population
 
+    def should_use_adaptive_surge(self) -> bool:
+        """Pulse elevated mutation periodically instead of applying it continuously."""
+        streak = self.generation_no_improvement
+        return (
+            streak >= self.ADAPTIVE_SURGE_START
+            and (streak - self.ADAPTIVE_SURGE_START) % self.ADAPTIVE_SURGE_INTERVAL == 0
+        )
+
     def get_plateau_diagnostics(self) -> Dict[str, object]:
         """Summarize population convergence without changing evolution behavior."""
         signatures = []
@@ -421,7 +431,7 @@ class GeneticOptimizer:
             ),
             "active_gene_count_max": max(active_gene_counts, default=0),
             "no_improvement_generations": self.generation_no_improvement,
-            "adaptive_mutation_surge": self.generation_no_improvement >= 3,
+            "adaptive_mutation_surge": self.should_use_adaptive_surge(),
         }
 
     def train(self):

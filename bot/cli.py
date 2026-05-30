@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     train.add_argument("--output-directory", default="training_runs")
     replay = subparsers.add_parser("replay", help="Replay the best candidate from a run")
     replay.add_argument("summary_path")
+    replay.add_argument("--dataset", choices=("training", "validation"), default="training")
     return parser
 
 
@@ -59,8 +60,8 @@ def run_cli(argv=None) -> int:
         return 0
     if mode == "replay":
         from training_runner import replay_run
-        evaluation = replay_run(args.summary_path)
-        print(f"Replayed fitness: {evaluation.fitness:.4f}")
+        evaluation = replay_run(args.summary_path, dataset_purpose=args.dataset)
+        print(f"Replayed {args.dataset} fitness: {evaluation.fitness:.4f}")
         return 0
 
     from main import run_training_mode

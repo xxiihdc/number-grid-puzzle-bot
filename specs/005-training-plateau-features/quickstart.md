@@ -40,3 +40,21 @@ processed 1,000 representative midgame feature extractions in `0.3852s`, or
 The multi-worker training benchmark remained healthy after expansion:
 `python3 test_training_performance.py` completed in `2.355s` with one worker and
 `1.244s` with two workers, a `47.2%` speedup against the `30.0%` target.
+
+## Validate An Interrupted Best
+
+Replay the best chromosome from the interrupted `578.6131` run against its full
+validation dataset:
+
+```sh
+python3 run_bot.py replay \
+  training_runs/train-20260530T131529.939217Z.json \
+  --dataset validation
+```
+
+Adaptive mutation now runs as a one-generation pulse at no-improvement streaks
+`3, 7, 11, ...`. Normal mutation resumes between pulses so the population can exploit
+useful descendants instead of remaining under continuous surge mutation.
+
+The interrupted best scored `443.6211` on the full validation dataset, compared with
+`409.0706` for the previous completed baseline.

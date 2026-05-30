@@ -102,6 +102,12 @@ Run summaries are written under `training_runs/`. Reevaluate the recorded best g
 python3 run_bot.py replay training_runs/<summary-file>.json
 ```
 
+Evaluate an interrupted run's best genome against its full recorded validation dataset:
+
+```bash
+python3 run_bot.py replay training_runs/<summary-file>.json --dataset validation
+```
+
 Plot max, average, and minimum fitness movement after each completed generation:
 
 ```bash
