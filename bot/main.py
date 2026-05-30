@@ -6,9 +6,6 @@ Implements the Expectimax search with dynamic depth and heuristic evaluation.
 
 import sys
 import os
-import time
-from typing import Tuple, List, Optional
-import numpy as np
 
 # Add the project root to the sys.path so top-level modules can be imported.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,7 +13,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from config import SINGLE_MATCH_MODE
 from game_state import GameState
 from expectimax import ExpectimaxSearch
-from genetics import GeneticOptimizer
 from features import FeaturePool
 from scoring import evaluate_board
 
@@ -35,12 +31,12 @@ def main():
     # Initialize Expectimax search
     search_engine = ExpectimaxSearch(feature_pool)
 
-    # Initialize genetic optimizer (for offline training)
-    optimizer = GeneticOptimizer(feature_pool, search_engine)
-
     # Check if we should train or play
     if len(sys.argv) > 1 and sys.argv[1] == "train":
+        from genetics import GeneticOptimizer
+
         print("Starting genetic algorithm training...")
+        optimizer = GeneticOptimizer(feature_pool, search_engine)
         optimizer.train()
     else:
         print("Starting puzzle solving...")
@@ -63,19 +59,27 @@ def play_game(game_state: GameState, search_engine: ExpectimaxSearch):
         elif turn <= 20:
             depth = 3
         else:
-            depth = 4  # or 5 for endgame
+            depth = 5
 
-        # Get best move from Expectimax search with timeout of 3 seconds
-        start_time = time.time()
-        best_slot, expected_score = search_engine.search(game_state, depth, timeout=3.0)
-        search_time = time.time() - start_time
+        # Spawn first so search evaluates the exact block that will be placed.
+        block_values = game_state.spawn_block()
+        best_slot, expected_score = search_engine.search(
+            game_state, block_values, depth, timeout=ExpectimaxSearch.DEFAULT_TIMEOUT
+        )
+        stats = search_engine.get_last_search_stats()
 
-        print(f"Search took {search_time:.2f}s")
+        print(f"Spawned block: {block_values}")
+        print(
+            f"Search took {stats.elapsed_seconds * 1000:.2f}ms "
+            f"(depth {stats.completed_depth}/{stats.target_depth}, "
+            f"nodes={stats.nodes_evaluated}, cache={stats.cache_entries}, "
+            f"timeout={stats.timed_out}, fallback={stats.fallback_used})"
+        )
         print(f"Best slot: {best_slot} (Expected score: {expected_score:.2f})")
 
-        # Apply the move (spawns a random block and places it)
+        # Apply the exact block that search evaluated.
         if best_slot is not None:
-            score_gained = game_state.make_move(best_slot)
+            score_gained = game_state.make_move(best_slot, block_values)
             total_score += score_gained
             print(f"Score gained: {score_gained}")
         else:

@@ -1,189 +1,280 @@
 #!/usr/bin/env python3
-"""
-Expectimax search implementation for the Number Grid Puzzle Bot.
-Implements dynamic depth search with heuristic evaluation as per design document.
-"""
+"""Budgeted Expectimax search for real-time game-mode move selection."""
 
-import random
 import math
+import random
 import time
-from typing import List, Tuple, Optional, Dict
-import numpy as np
+import zlib
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from game_state import GameState
 from features import FeaturePool
 
+Slot = Tuple[int, int]
+Block = Tuple[int, int, int]
+
+
+@dataclass(frozen=True)
+class SearchStats:
+    """Metrics from the most recent search call."""
+
+    elapsed_seconds: float
+    target_depth: int
+    completed_depth: int
+    timed_out: bool
+    fallback_used: bool
+    nodes_evaluated: int
+    cache_entries: int
+
+
+@dataclass(frozen=True)
+class _Candidate:
+    slot: Slot
+    immediate_score: int
+    fallback_value: float
+
+
+class _SearchTimeout(Exception):
+    """Raised internally when a deeper iteration exceeds the search budget."""
+
 
 class ExpectimaxSearch:
-    """Expectimax search algorithm for finding optimal moves in the puzzle game."""
+    """Select moves with deterministic sampled lookahead under a hard deadline."""
+
+    DEFAULT_TIMEOUT = 0.180
+    BEAM_WIDTH = 3
+    CHANCE_SAMPLES = 2
+    MAX_CACHE_ENTRIES = 10_000
 
     def __init__(self, feature_pool: FeaturePool):
-        """Initialize the Expectimax search with a feature pool for heuristic evaluation."""
         self.feature_pool = feature_pool
-        self.transposition_table = {}  # Cache for previously evaluated states
-        self.nodes_evaluated = 0  # For performance monitoring
-        self._chromosome = None  # Will hold evolved weights if available
-        self.start_time = None
-        self.max_time = None
-        self.timeout_occurred = False
-
-    def search(self, state: GameState, depth: int, timeout: Optional[float] = None) -> Tuple[Optional[Tuple[int, int]], float]:
-        """
-        Perform Expectimax search to find the best move.
-
-        Args:
-            timeout: Maximum time in seconds to spend on this search. If None, no timeout.
-
-        Returns:
-            Tuple of (best_slot, expected_score) where best_slot is (x, y) coordinates
-            and expected_score is the expected value from that move.
-        """
+        self.transposition_table: Dict[Tuple, float] = {}
         self.nodes_evaluated = 0
-        best_slot = None
-        best_expected_value = -math.inf
-        self.start_time = time.time()
-        self.max_time = timeout
+        self._chromosome = None
+        self._deadline: Optional[float] = None
         self.timeout_occurred = False
+        self._last_search_stats = SearchStats(0.0, 0, 0, False, False, 0, 0)
 
+    def search(self, state: GameState, block_values: Sequence[int], depth: int,
+               timeout: Optional[float] = DEFAULT_TIMEOUT) -> Tuple[Optional[Slot], float]:
+        """
+        Return the best available slot for the already-spawned block.
+
+        A complete depth-1 scan runs first so the method always has a valid fallback.
+        Deeper iterations are published only after they complete, avoiding candidate
+        ordering bias when the deadline expires partway through an iteration.
+        """
+        started = time.perf_counter()
+        self.nodes_evaluated = 0
+        self.timeout_occurred = False
+        self.clear_transposition_table()
+        self._deadline = None if timeout is None else started + max(0.0, timeout)
+
+        target_depth = max(1, depth)
+        block = self._normalize_block(block_values)
         valid_slots = state.get_valid_slots()
         if not valid_slots:
+            self._record_stats(started, target_depth, 0)
             return None, 0.0
 
-        # For each valid slot, calculate the expected value
-        for slot in valid_slots:
-            if self.timeout_occurred:
-                print(f"Search timed out after {time.time() - self.start_time:.2f}s. Returning best move found so far.")
+        working_state = state.copy()
+
+        # This full root scan is intentionally deadline-independent: it is small and
+        # guarantees a legal move even when a caller supplies a very small timeout.
+        root_candidates = self._rank_candidates(
+            working_state, block, valid_slots, enforce_deadline=False
+        )
+        best_slot = root_candidates[0].slot
+        best_value = root_candidates[0].fallback_value
+        completed_depth = 1
+
+        for iteration_depth in range(2, target_depth + 1):
+            try:
+                self._check_deadline()
+                iteration_slot, iteration_value = self._search_root(
+                    working_state, block, root_candidates, iteration_depth
+                )
+            except _SearchTimeout:
+                self.timeout_occurred = True
                 break
-            x, y = slot
 
-            # Calculate expected value over all possible block spawns (4^3 = 64 possibilities)
-            expected_value = self._expectimax(state, slot, depth, is_chance_node=False)
+            best_slot = iteration_slot
+            best_value = iteration_value
+            completed_depth = iteration_depth
 
-            if expected_value > best_expected_value:
-                best_expected_value = expected_value
-                best_slot = slot
+        if self._deadline is not None and time.perf_counter() >= self._deadline:
+            self.timeout_occurred = completed_depth < target_depth
 
-        return best_slot, best_expected_value
+        self._record_stats(started, target_depth, completed_depth)
+        return best_slot, best_value
 
-    def _expectimax(self, state: GameState, slot: Tuple[int, int],
-                   depth: int, is_chance_node: bool) -> float:
-        """
-        Recursive Expectimax search.
+    def _search_root(self, state: GameState, block: Block,
+                     root_candidates: List[_Candidate], depth: int) -> Tuple[Slot, float]:
+        """Expand the strongest root candidates for one complete depth iteration."""
+        best_slot = root_candidates[0].slot
+        best_value = -math.inf
 
-        Args:
-            state: Current game state
-            slot: The slot being evaluated (for chance nodes, this is the slot to place block)
-            depth: Remaining search depth
-            is_chance_node: True if this is a chance node (random block spawn), False if max node (bot decision)
+        for candidate in root_candidates[:self.BEAM_WIDTH]:
+            self._check_deadline()
+            x, y = candidate.slot
+            score_gained = state.place_block(x, y, block)
+            try:
+                value = score_gained + self._chance_value(state, depth - 1)
+            finally:
+                state._undo_block(x, y, score_gained)
 
-        Returns:
-            Expected value of the position
-        """
-        # Timeout check
-        if self.max_time is not None and (time.time() - self.start_time) > self.max_time:
-            self.timeout_occurred = True
-            # Return heuristic evaluation as fallback
-            return self._evaluate_state(state)
+            if value > best_value:
+                best_value = value
+                best_slot = candidate.slot
+
+        return best_slot, best_value
+
+    def _chance_value(self, state: GameState, depth: int) -> float:
+        """Average future values over a reproducible sample of random blocks."""
+        self._check_deadline()
+        state_key = self._get_state_key("chance", state, None, depth)
+        cached_value = self.transposition_table.get(state_key)
+        if cached_value is not None:
+            return cached_value
 
         self.nodes_evaluated += 1
+        total_value = 0.0
+        for future_block in self._sample_future_blocks(state):
+            self._check_deadline()
+            total_value += self._max_value(state, future_block, depth)
 
-        # Check for transposition (state caching)
-        state_key = self._get_state_key(state, slot, depth, is_chance_node)
-        if state_key in self.transposition_table:
-            return self.transposition_table[state_key]
+        expected_value = total_value / self.CHANCE_SAMPLES
+        self._cache_value(state_key, expected_value)
+        return expected_value
 
-        # Terminal conditions
-        if depth == 0 or state.is_game_over():
-            # Use heuristic evaluation at leaf nodes
-            heuristic_value = self._evaluate_state(state)
-            self.transposition_table[state_key] = heuristic_value
-            return heuristic_value
+    def _max_value(self, state: GameState, block: Block, depth: int) -> float:
+        """Choose the strongest slot for a sampled future block."""
+        self._check_deadline()
+        state_key = self._get_state_key("max", state, block, depth)
+        cached_value = self.transposition_table.get(state_key)
+        if cached_value is not None:
+            return cached_value
 
-        if is_chance_node:
-            # Chance node: average over all possible block spawns
-            x, y = slot
-            total_value = 0.0
-            count = 0
+        self.nodes_evaluated += 1
+        valid_slots = state.get_valid_slots()
+        if not valid_slots or state.is_game_over():
+            value = self._evaluate_state(state)
+            self._cache_value(state_key, value)
+            return value
 
-            # Generate all possible 3-block combinations (values 7,8,9,10)
-            # This is 4^3 = 64 possibilities
-            for v1 in [7, 8, 9, 10]:
-                for v2 in [7, 8, 9, 10]:
-                    for v3 in [7, 8, 9, 10]:
-                        block_values = [v1, v2, v3]
+        candidates = self._rank_candidates(state, block, valid_slots)
+        if depth <= 1:
+            value = candidates[0].fallback_value
+            self._cache_value(state_key, value)
+            return value
 
-                        # Check if we can place this block
-                        if state.can_place_block(x, y):
-                            # Create new state with this block placed
-                            new_state = state.copy()
-                            score_gained = new_state.place_block(x, y, block_values)
+        best_value = -math.inf
+        for candidate in candidates[:self.BEAM_WIDTH]:
+            self._check_deadline()
+            x, y = candidate.slot
+            score_gained = state.place_block(x, y, block)
+            try:
+                value = score_gained + self._chance_value(state, depth - 1)
+            finally:
+                state._undo_block(x, y, score_gained)
+            best_value = max(best_value, value)
 
-                            # Recursively evaluate the resulting state (now it's bot's turn)
-                            future_value = self._expectimax(new_state, None, depth - 1, False)
-                            total_value += score_gained + future_value
-                            count += 1
-                        # If we can't place the block, this spawn leads to invalid state
-                        # In practice, the game mechanics might prevent this, but we'll treat it as 0 value
+        self._cache_value(state_key, best_value)
+        return best_value
 
-            # Average over all possible spawns
-            expected_value = total_value / count if count > 0 else 0.0
-            self.transposition_table[state_key] = expected_value
-            return expected_value
+    def _rank_candidates(self, state: GameState, block: Block,
+                         valid_slots: Sequence[Slot],
+                         enforce_deadline: bool = True) -> List[_Candidate]:
+        """Rank slots by immediate score plus heuristic leaf evaluation."""
+        candidates = []
+        for x, y in valid_slots:
+            if enforce_deadline:
+                self._check_deadline()
 
-        else:
-            # Max node: bot chooses the best slot
-            if state.is_game_over():
-                heuristic_value = self._evaluate_state(state)
-                self.transposition_table[state_key] = heuristic_value
-                return heuristic_value
+            score_gained = state.place_block(x, y, block)
+            try:
+                self.nodes_evaluated += 1
+                fallback_value = score_gained + self._evaluate_state(state)
+            finally:
+                state._undo_block(x, y, score_gained)
 
-            valid_slots = state.get_valid_slots()
-            if not valid_slots:
-                heuristic_value = self._evaluate_state(state)
-                self.transposition_table[state_key] = heuristic_value
-                return heuristic_value
+            candidates.append(_Candidate((x, y), score_gained, fallback_value))
 
-            best_value = -math.inf
-            for next_slot in valid_slots:
-                # For max nodes, we evaluate the chance node that follows placing a block
-                # But since we don't know the block values yet, we go to the chance level
-                value = self._expectimax(state, next_slot, depth, True)
-                if value > best_value:
-                    best_value = value
+        candidates.sort(key=lambda candidate: candidate.fallback_value, reverse=True)
+        return candidates
 
-            self.transposition_table[state_key] = best_value
-            return best_value
+    def _sample_future_blocks(self, state: GameState) -> Tuple[Block, ...]:
+        """Generate stable samples without consuming the game RNG stream."""
+        seed = zlib.crc32(state.grid.tobytes())
+        seed = zlib.crc32(state.turn_number.to_bytes(2, "little"), seed)
+        seed = zlib.crc32(state.total_score.to_bytes(4, "little", signed=True), seed)
+        rng = random.Random(seed)
+        numbers = GameState.VALID_NUMBER_SEQUENCE
+        return tuple(
+            tuple(rng.choice(numbers) for _ in range(GameState.BLOCK_HEIGHT))
+            for _ in range(self.CHANCE_SAMPLES)
+        )
 
-    def _get_state_key(self, state: GameState, slot: Optional[Tuple[int, int]],
-                      depth: int, is_chance_node: bool) -> str:
-        """Generate a unique key for state transposition caching."""
-        # Include the grid state, slot being considered, depth, and node type
-        grid_hash = hash(state.grid.tobytes())
-        slot_info = str(slot) if slot is not None else "None"
-        return f"{grid_hash}_{slot_info}_{depth}_{is_chance_node}"
+    def _get_state_key(self, node_type: str, state: GameState,
+                       block: Optional[Block], depth: int) -> Tuple:
+        """Create a collision-safe cache key for one search node."""
+        return (
+            node_type,
+            state.grid.tobytes(),
+            state.total_score,
+            state.turn_number,
+            block,
+            depth,
+        )
+
+    def _cache_value(self, state_key: Tuple, value: float) -> None:
+        if len(self.transposition_table) < self.MAX_CACHE_ENTRIES:
+            self.transposition_table[state_key] = value
+
+    def _check_deadline(self) -> None:
+        if self._deadline is not None and time.perf_counter() >= self._deadline:
+            raise _SearchTimeout
+
+    def _normalize_block(self, block_values: Sequence[int]) -> Block:
+        block = tuple(int(value) for value in block_values)
+        if len(block) != GameState.BLOCK_HEIGHT:
+            raise ValueError("A block must contain exactly three values")
+        if any(value not in GameState.VALID_NUMBERS for value in block):
+            raise ValueError("Block values must be in {7, 8, 9, 10}")
+        return block
+
+    def _record_stats(self, started: float, target_depth: int,
+                      completed_depth: int) -> None:
+        self._last_search_stats = SearchStats(
+            elapsed_seconds=time.perf_counter() - started,
+            target_depth=target_depth,
+            completed_depth=completed_depth,
+            timed_out=self.timeout_occurred,
+            fallback_used=completed_depth < target_depth,
+            nodes_evaluated=self.nodes_evaluated,
+            cache_entries=len(self.transposition_table),
+        )
 
     def _evaluate_state(self, state: GameState) -> float:
-        """
-        Evaluate a game state using the heuristic function.
-        Implements the weighted sum of features from the design document.
-        """
+        """Evaluate one leaf with either evolved or default heuristic weights."""
         if self._chromosome is not None:
-            # Use evolved weights if available
             return self._chromosome.get_fitness(state, self.feature_pool)
-        else:
-            # Default equal weights for all features
-            feature_values = self.feature_pool.extract_all_features(state)
-            # Simple sum of all features (equal weighting)
-            return sum(feature_values.values())
+        feature_values = self.feature_pool.extract_all_features(state)
+        return sum(feature_values.values())
 
-    def set_chromosome(self, chromosome):
-        """Set the chromosome (weights) to use for evaluation."""
+    def set_chromosome(self, chromosome) -> None:
+        """Set the chromosome weights used for leaf evaluation."""
         self._chromosome = chromosome
 
     def get_nodes_evaluated(self) -> int:
-        """Get the number of nodes evaluated in the last search."""
+        """Return the number of nodes evaluated during the latest search."""
         return self.nodes_evaluated
 
-    def clear_transposition_table(self):
-        """Clear the transposition table."""
+    def get_last_search_stats(self) -> SearchStats:
+        """Return metrics for the most recent search call."""
+        return self._last_search_stats
+
+    def clear_transposition_table(self) -> None:
+        """Clear cached node values."""
         self.transposition_table.clear()

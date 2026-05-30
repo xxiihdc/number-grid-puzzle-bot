@@ -88,7 +88,7 @@ VII. Action Space Reduction
 6. Proceed with feature implementation following test-first approach
 
 <!-- SPECKIT START -->
-active_plan: specs/002-post-game-score-display/plan.md
+active_plan: specs/003-optimize-game-inference/plan.md
 <!-- SPECKIT END -->
 
 ## Performance Targets
