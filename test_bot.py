@@ -1,92 +1,146 @@
 #!/usr/bin/env python3
-"""
-Test file to demonstrate the basic functionality of the Number Grid Puzzle Bot.
-"""
+"""Focused functional checks for the Number Grid Puzzle Bot."""
 
-import sys
 import os
+import random
+import sys
 
 # Add the bot directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'bot'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "bot"))
 
-from bot.main import main
-from bot.game_state import GameState
-from bot.features import FeaturePool
 from bot.expectimax import ExpectimaxSearch
+from bot.features import FeaturePool
+from bot.game_state import GameState
 
 
-def test_game_state():
-    """Test basic game state functionality."""
-    print("Testing Game State...")
+def _target_depth(turn: int) -> int:
+    if turn <= 10:
+        return 2
+    if turn <= 20:
+        return 3
+    return 5
+
+
+def test_game_state() -> None:
+    """A pre-spawned block must be placed unchanged."""
     state = GameState()
+    block = (7, 8, 9)
+    slot = state.get_valid_slots()[0]
 
-    print(f"Initial state (turn {state.turn_number}):")
-    print(state)
-    print(f"Valid slots: {len(state.get_valid_slots())}")
+    score = state.make_move(slot, block)
 
-    # Test placing a block
-    if state.get_valid_slots():
-        slot = state.get_valid_slots()[0]
-        x, y = slot
-        block_values = [7, 8, 9]
-
-        print(f"\nPlacing block {block_values} at slot ({x}, {y})")
-        try:
-            score = state.place_block(x, y, block_values)
-            print(f"Score gained: {score}")
-            print(f"New state (turn {state.turn_number}):")
-            print(state)
-        except Exception as e:
-            print(f"Error placing block: {e}")
+    assert score == 0
+    assert tuple(state.get_grid_2d()[0:3, 0]) == block
+    assert state.turn_number == 1
+    assert slot not in state.get_valid_slots()
 
 
-def test_features():
-    """Test feature extraction."""
-    print("\nTesting Feature Extraction...")
+def test_spawn_block() -> None:
+    """Seeded spawning is reproducible and does not modify the board."""
     state = GameState()
-    feature_pool = FeaturePool()
+    first = state.spawn_block(random.Random(12345))
+    second = state.spawn_block(random.Random(12345))
 
-    # Extract features from initial state
-    features = feature_pool.extract_all_features(state)
-
-    print("Features from empty board:")
-    for name, value in features.items():
-        print(f"  {name}: {value}")
-
-    # Place a block and test again
-    if state.get_valid_slots():
-        slot = state.get_valid_slots()[0]
-        x, y = slot
-        block_values = [7, 7, 7]  # Three 7s should create some features
-        state.place_block(x, y, block_values)
-
-        features = feature_pool.extract_all_features(state)
-        print("\nFeatures after placing [7,7,7]:")
-        for name, value in features.items():
-            if value != 0:  # Only show non-zero features
-                print(f"  {name}: {value}")
+    assert first == second
+    assert len(first) == 3
+    assert all(value in GameState.VALID_NUMBERS for value in first)
+    assert state.turn_number == 0
+    assert not state.grid.any()
 
 
-def test_expectimax():
-    """Test Expectimax search (basic)."""
-    print("\nTesting Expectimax Search...")
+def test_features() -> None:
+    """Feature extraction still reports the state after deterministic placement."""
     state = GameState()
-    feature_pool = FeaturePool()
-    search_engine = ExpectimaxSearch(feature_pool)
+    state.make_move((0, 0), (7, 7, 7))
 
-    # Test with shallow depth for quick results
-    if state.get_valid_slots():
-        slot, score = search_engine.search(state, depth=1)
-        print(f"Best slot: {slot}, Expected score: {score}")
+    features = FeaturePool().extract_all_features(state)
+
+    assert features["f1_actual_score"] > 0
+    assert features["f13_vertical_match_interfaces"] == 2.0
+
+
+def test_expectimax_preserves_state() -> None:
+    """Search must undo every simulated move before returning."""
+    state = GameState()
+    original_grid = state.grid.copy()
+    original_slots = state.occupied_slots.copy()
+    search_engine = ExpectimaxSearch(FeaturePool())
+
+    slot, _ = search_engine.search(state, (7, 8, 9), depth=2)
+    stats = search_engine.get_last_search_stats()
+
+    assert slot in state.get_valid_slots()
+    assert (state.grid == original_grid).all()
+    assert state.occupied_slots == original_slots
+    assert state.turn_number == 0
+    assert stats.completed_depth >= 1
+    assert stats.cache_entries <= search_engine.MAX_CACHE_ENTRIES
+
+
+def test_expectimax_timeout_returns_valid_fallback() -> None:
+    """A deadline hit during deeper search must keep the complete root result."""
+    state = GameState()
+    search_engine = ExpectimaxSearch(FeaturePool())
+
+    slot, _ = search_engine.search(state, (7, 8, 9), depth=5, timeout=0.0)
+    stats = search_engine.get_last_search_stats()
+
+    assert slot in state.get_valid_slots()
+    assert stats.completed_depth == 1
+    assert stats.timed_out
+    assert stats.fallback_used
+
+
+def test_last_slot_returns_promptly() -> None:
+    """The final aligned slot is selected without invalid simulation."""
+    state = GameState()
+    for slot in state.get_valid_slots()[:-1]:
+        state.make_move(slot, (7, 8, 9))
+
+    expected_slot = state.get_valid_slots()[0]
+    search_engine = ExpectimaxSearch(FeaturePool())
+    slot, _ = search_engine.search(state, (10, 10, 10), depth=5)
+
+    assert slot == expected_slot
+    assert search_engine.get_last_search_stats().elapsed_seconds < 0.2
+
+
+def test_complete_game_packing() -> None:
+    """A deterministic full game still places exactly 27 aligned blocks."""
+    state = GameState()
+    search_engine = ExpectimaxSearch(FeaturePool())
+    rng = random.Random(20260530)
+
+    for turn in range(1, GameState.TOTAL_TURNS + 1):
+        block = state.spawn_block(rng)
+        available_slots = set(state.get_valid_slots())
+        slot, _ = search_engine.search(
+            state, block, depth=_target_depth(turn), timeout=0.0
+        )
+        assert slot in available_slots
+        state.make_move(slot, block)
+
+    assert state.turn_number == GameState.TOTAL_TURNS
+    assert len(state.occupied_slots) == GameState.TOTAL_TURNS
+    assert not state.get_valid_slots()
+    assert (state.grid != 0).sum() == GameState.TOTAL_CELLS
 
 
 if __name__ == "__main__":
-    print("Number Grid Puzzle Bot - Component Tests")
+    tests = [
+        test_game_state,
+        test_spawn_block,
+        test_features,
+        test_expectimax_preserves_state,
+        test_expectimax_timeout_returns_valid_fallback,
+        test_last_slot_returns_promptly,
+        test_complete_game_packing,
+    ]
+
+    print("Number Grid Puzzle Bot - Functional Checks")
     print("=" * 50)
-
-    test_game_state()
-    test_features()
-    test_expectimax()
-
-    print("\n" + "=" * 50)
-    print("All tests completed!")
+    for test in tests:
+        test()
+        print(f"PASS: {test.__name__}")
+    print("=" * 50)
+    print(f"All {len(tests)} checks passed.")

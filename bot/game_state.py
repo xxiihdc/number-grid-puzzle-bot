@@ -4,8 +4,10 @@ Game state representation for the Number Grid Puzzle.
 Implements the 9x9 grid with 3x1 vertical blocks and scoring mechanics.
 """
 
+import random
+from typing import List, Optional, Sequence, Tuple
+
 import numpy as np
-from typing import List, Tuple, Optional
 
 
 class GameState:
@@ -18,8 +20,11 @@ class GameState:
     BLOCK_HEIGHT = 3
     BLOCK_WIDTH = 1
     VALID_NUMBERS = {7, 8, 9, 10}
+    VALID_NUMBER_SEQUENCE = (7, 8, 9, 10)
     VALID_X_POSITIONS = list(range(GRID_SIZE))  # 0-8
     VALID_Y_ANCHORS = [0, 3, 6]  # Top row of each 3-cell slot
+    ALL_VALID_SLOTS = tuple((x, y) for x in range(9) for y in (0, 3, 6))
+    DIRECTIONS = ((1, 0), (0, 1), (1, 1), (1, -1))
 
     def __init__(self):
         """Initialize an empty 9x9 grid."""
@@ -30,9 +35,9 @@ class GameState:
         self.total_score = 0
 
     @property
-    def VALID_SLOTS(self) -> List[Tuple[int, int]]:
-        """Get list of all valid slots (27 total). Computed on-demand."""
-        return [(x, y) for x in self.VALID_X_POSITIONS for y in self.VALID_Y_ANCHORS]
+    def VALID_SLOTS(self) -> Tuple[Tuple[int, int], ...]:
+        """Get all aligned slots in stable iteration order."""
+        return self.ALL_VALID_SLOTS
 
     def _to_index(self, x: int, y: int) -> int:
         """Convert 2D coordinates to 1D array index."""
@@ -69,7 +74,7 @@ class GameState:
 
         return True
 
-    def place_block(self, x: int, y: int, block_values: List[int]) -> int:
+    def place_block(self, x: int, y: int, block_values: Sequence[int]) -> int:
         """
         Place a 3x1 block at position (x, y) with given values.
         Returns the score gained from this placement.
@@ -77,8 +82,6 @@ class GameState:
         if not self.can_place_block(x, y):
             raise ValueError(f"Cannot place block at slot ({x}, {y})")
 
-        # Place the block values
-        score_gained = 0
         for dy, value in enumerate(block_values):
             target_y = y + dy
             index = self._to_index(x, target_y)
@@ -94,22 +97,36 @@ class GameState:
 
         return score_gained
 
-    def make_move(self, slot: Tuple[int, int]) -> int:
+    def _undo_block(self, x: int, y: int, score_gained: int) -> None:
+        """Undo one simulated placement. Search only calls this for its latest move."""
+        for dy in range(self.BLOCK_HEIGHT):
+            self.grid[self._to_index(x, y + dy)] = 0
+
+        self.occupied_slots.remove((x, y))
+        self.turn_number -= 1
+        self.total_score -= score_gained
+
+    def spawn_block(self, rng=None) -> Tuple[int, int, int]:
+        """Spawn one block without modifying the board."""
+        chooser = rng if rng is not None else random
+        return tuple(chooser.choice(self.VALID_NUMBER_SEQUENCE) for _ in range(3))
+
+    def make_move(self, slot: Tuple[int, int],
+                  block_values: Optional[Sequence[int]] = None) -> int:
         """
         Make a move by placing a randomly spawned 3x1 block at the given slot.
         Each turn spawns one 3x1 vertical block with 3 random numbers from {7,8,9,10}.
         Returns the score gained from this placement.
         """
-        import random
         x, y = slot
-
-        # Generate random block values (each number is independently chosen from {7,8,9,10})
-        block_values = [random.choice([7, 8, 9, 10]) for _ in range(3)]
+        if block_values is None:
+            block_values = self.spawn_block()
 
         # Place the block and return the score gained
         return self.place_block(x, y, block_values)
 
-    def _calculate_placement_score(self, x: int, y: int, block_values: List[int]) -> int:
+    def _calculate_placement_score(self, x: int, y: int,
+                                   block_values: Sequence[int]) -> int:
         """
         Calculate score gained from placing a block using local ray-casting.
         Only checks lines that pass through the newly placed blocks.
@@ -121,10 +138,8 @@ class GameState:
         for dy, value in enumerate(block_values):
             target_y = y + dy
 
-            # Check 4 directions: horizontal (1,0), vertical (0,1), diagonal down-right (1,1), diagonal down-left (1,-1)
-            directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
-
-            for dx, dy_dir in directions:
+            # Check horizontal, vertical, and both diagonal directions.
+            for dx, dy_dir in self.DIRECTIONS:
                 # Count in positive direction
                 count_pos = 0
                 cx, cy = x + dx, target_y + dy_dir
