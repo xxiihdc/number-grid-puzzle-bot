@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--master-seed", required=True, type=int)
     parser.add_argument("--scenarios", required=True, type=int)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="Replace an existing output file")
     return parser
 
 

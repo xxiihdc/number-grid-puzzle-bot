@@ -71,7 +71,8 @@ python3 scripts/generate_training_seeds.py \
   --purpose training \
   --master-seed 20260530 \
   --scenarios 100 \
-  --output training_data/train-default.json
+  --output training_data/train-default.json \
+  --overwrite
 ```
 
 For scripted experiments, pass the GA controls explicitly:
@@ -98,6 +99,21 @@ Run summaries are written under `training_runs/`. Reevaluate the recorded best g
 python3 run_bot.py replay training_runs/<summary-file>.json
 ```
 
+Plot max, average, and minimum fitness movement after each completed generation:
+
+```bash
+python3 scripts/plot_training_log.py training_runs/<summary-file>.json
+```
+
+The same command works while training is still running because summaries are persisted
+after every generation. To save a chart without opening a graphical window:
+
+```bash
+python3 scripts/plot_training_log.py training_runs/<summary-file>.json \
+  --output training_runs/training-progress.png \
+  --no-ui
+```
+
 Before play or training, the application automatically promotes the newest summary with
 a trained chromosome into `training_runs/active_chromosome.json`. You can also run the
 sync step explicitly:
@@ -109,12 +125,46 @@ python3 scripts/sync_latest_weights.py
 Normal play loads the active chromosome automatically. A new training run keeps that
 chromosome as its baseline genome and initializes the remaining population around it.
 
+### To compare against a known-future baseline:
+
+Use a persisted CRN scenario to compare greedy placement against an offline beam search
+that can see all 27 blocks before placing the first one:
+
+```bash
+python3 scripts/compare_known_future.py \
+  --dataset training_data/train-10m.json \
+  --scenario-id scenario-0001 \
+  --beam-width 500 \
+  --json-output training_runs/known-future-scenario-0001.json
+```
+
+The report prints the official board score and selected slot after every turn. The
+known-future result is an approximate comparison baseline, not a proof of the absolute
+optimum. Increase `--beam-width` for a stronger but slower search. After calculation,
+two graphical windows open to compare the final greedy and foresight boards. Use
+`--no-ui` when running headless or in automation.
+
+Generate one new reproducible scenario and compare it immediately:
+
+```bash
+python3 scripts/compare_known_future.py \
+  --generate-dataset training_data/known-future-demo.json \
+  --master-seed 20260530 \
+  --beam-width 500 \
+  --overwrite
+```
+
+Omit `--master-seed` to generate a random seed. The command prints the selected seed.
+Remove `--overwrite` when existing dataset files should be protected.
+
 ### To run tests:
 ```bash
 python test_bot.py
+python3 test_foresight.py
 python3 test_training_config.py
 python3 test_training_data.py
 python3 test_training_overlap.py
+python3 test_training_plot.py
 python3 test_training_runner.py
 python3 test_training_parallel.py
 python3 test_training_ui.py

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 BOARD_SIZE = 9
 
-def display_final_game_state(board, final_score, winning_streaks, ai_name):
+def display_final_game_state(board, final_score, winning_streaks, ai_name, block=True):
     """
     Display the final game state in a graphical window.
 
@@ -19,6 +19,7 @@ def display_final_game_state(board, final_score, winning_streaks, ai_name):
         final_score: Integer representing the final score
         winning_streaks: List of winning streak coordinate lists
         ai_name: String identifier of the AI used
+        block: Whether to wait until the user closes the graphical windows
     """
     try:
         # Validate inputs
@@ -65,7 +66,7 @@ def display_final_game_state(board, final_score, winning_streaks, ai_name):
                  fontsize=16, fontweight='bold', pad=20)
 
         plt.tight_layout()
-        plt.show()
+        plt.show(block=block)
 
     except Exception as e:
         logger.error(f"Failed to display game state: {e}")
