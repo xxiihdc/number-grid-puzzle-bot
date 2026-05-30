@@ -9,7 +9,6 @@ Implements the advanced GA techniques from the design document:
 """
 
 import random
-import numpy as np
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -87,9 +86,9 @@ class Chromosome:
 
         # Calculate weighted sum using current phase's genes
         total = 0.0
-        for i in range(self.num_features):
+        for i, feature_name in enumerate(feature_pool.get_feature_names()):
             gene = self.get_gene(phase, i)
-            feature_value = feature_values.get(f"f{i+1}", 0.0)
+            feature_value = feature_values.get(feature_name, 0.0)
             total += gene.mask * gene.weight * feature_value
 
         return total
@@ -136,11 +135,11 @@ class Chromosome:
             for f in range(self.num_features):
                 # Uniform crossover for each gene
                 if random.random() < 0.5:
-                    child1.genes[p][f] = self.genes[p][f]
-                    child2.genes[p][f] = other.genes[p][f]
+                    child1.genes[p][f] = Gene(self.genes[p][f].mask, self.genes[p][f].weight)
+                    child2.genes[p][f] = Gene(other.genes[p][f].mask, other.genes[p][f].weight)
                 else:
-                    child1.genes[p][f] = other.genes[p][f]
-                    child2.genes[p][f] = self.genes[p][f]
+                    child1.genes[p][f] = Gene(other.genes[p][f].mask, other.genes[p][f].weight)
+                    child2.genes[p][f] = Gene(self.genes[p][f].mask, self.genes[p][f].weight)
 
         return child1, child2
 
@@ -154,6 +153,33 @@ class Chromosome:
         new_chromo.fitness = self.fitness
         new_chromo.age = self.age
         return new_chromo
+
+    def to_payload(self) -> Dict[str, object]:
+        """Serialize the chromosome into process-safe primitive values."""
+        return {
+            "num_features": self.num_features,
+            "num_phases": self.num_phases,
+            "fitness": self.fitness,
+            "age": self.age,
+            "genes": [
+                [{"mask": gene.mask, "weight": gene.weight} for gene in phase]
+                for phase in self.genes
+            ],
+        }
+
+    @classmethod
+    def from_payload(cls, payload: Dict[str, object]) -> 'Chromosome':
+        """Reconstruct a chromosome from a process-safe payload."""
+        chromosome = cls(int(payload["num_features"]), int(payload.get("num_phases", 3)))
+        genes = payload["genes"]
+        for phase_idx, phase in enumerate(genes):
+            for feature_idx, gene in enumerate(phase):
+                chromosome.genes[phase_idx][feature_idx] = Gene(
+                    int(gene["mask"]), float(gene["weight"])
+                )
+        chromosome.fitness = float(payload.get("fitness", 0.0))
+        chromosome.age = int(payload.get("age", 0))
+        return chromosome
 
     def __str__(self) -> str:
         """String representation showing the phase-based structure."""
@@ -189,7 +215,9 @@ class GeneticOptimizer:
                  num_generations: int = 100,
                  elite_size: int = 5,
                  mutation_rate: float = 0.05,
-                 tournament_size: int = 3):
+                 tournament_size: int = 3,
+                 config=None,
+                 scenarios=None):
         """
         Initialize the genetic optimizer.
 
@@ -204,11 +232,16 @@ class GeneticOptimizer:
         """
         self.feature_pool = feature_pool
         self.search_engine = search_engine
-        self.population_size = population_size
-        self.num_generations = num_generations
-        self.elite_size = elite_size
-        self.base_mutation_rate = mutation_rate
-        self.tournament_size = tournament_size
+        self.config = config
+        self.scenarios = tuple(scenarios or ())
+        self.population_size = config.population_size if config else population_size
+        self.num_generations = config.generations if config else num_generations
+        self.elite_size = config.elite_count if config else elite_size
+        self.base_mutation_rate = config.mutation_rate if config else mutation_rate
+        self.tournament_size = config.tournament_size if config else tournament_size
+        self.inject_count = config.inject_count if config else 0
+        self.worker_count = config.worker_count if config else 1
+        self.variance_penalty = config.variance_penalty if config else 0.0
 
         # Get number of features from feature pool
         self.num_features = len(feature_pool.get_feature_names())
@@ -219,8 +252,8 @@ class GeneticOptimizer:
         self.best_fitness = -float('inf')
         self.generation_no_improvement = 0  # For adaptive mutation surge
 
-        # CRN: Common Random Numbers - fixed set of seeds for fair evaluation
-        self.crn_seeds = [random.randint(1, 1000000) for _ in range(50)]  # N=50 as per design
+        if config:
+            random.seed(config.reproducibility_seed)
 
         # Initialize population
         self._initialize_population()
@@ -245,66 +278,31 @@ class GeneticOptimizer:
         Evaluate the entire population using Common Random Numbers (CRN).
         All individuals evaluate on the same set of random seeds to reduce noise.
         """
+        if not self.scenarios:
+            raise ValueError("Persisted training scenarios are required")
+        from training_runner import evaluate_generation
+
+        results = evaluate_generation(
+            self.population,
+            self.scenarios,
+            self.variance_penalty,
+            self.worker_count,
+        )
         evaluated = []
-
-        for chromosome in self.population:
-            # Reset search engine's chromosome for evaluation
-            self.search_engine.set_chromosome(chromosome)
-
-            # Evaluate on each CRN seed (different random block sequences)
-            fitness_scores = []
-            for seed in self.crn_seeds:
-                # Set random seed for reproducible block generation
-                random.seed(seed)
-                np.random.seed(seed)
-
-                # Play a partial game or evaluate specific states
-                # For simplicity, we'll evaluate on random game states
-                # In practice, this would involve running actual game simulations
-                fitness = self._evaluate_chromosome_on_seed(chromosome, seed)
-                fitness_scores.append(fitness)
-
-            # Average fitness over all CRN seeds (as per design doc)
-            avg_fitness = sum(fitness_scores) / len(fitness_scores)
-            chromosome.fitness = avg_fitness
+        improved = False
+        for chromosome, result in zip(self.population, results):
+            chromosome.fitness = result.fitness
             chromosome.age += 1
-
-            evaluated.append((chromosome, avg_fitness))
-
-            # Track best chromosome
-            if avg_fitness > self.best_fitness:
-                self.best_fitness = avg_fitness
+            evaluated.append((chromosome, result.fitness))
+            if result.fitness > self.best_fitness:
+                self.best_fitness = result.fitness
                 self.best_chromosome = chromosome.copy()
-                self.generation_no_improvement = 0  # Reset counter
-            else:
-                self.generation_no_improvement += 1
+                improved = True
+        self.generation_no_improvement = 0 if improved else self.generation_no_improvement + 1
 
         # Sort by fitness (descending)
         evaluated.sort(key=lambda x: x[1], reverse=True)
         return evaluated
-
-    def _evaluate_chromosome_on_seed(self, chromosome: Chromosome, seed: int) -> float:
-        """
-        Evaluate a chromosome on a specific CRN seed.
-        This would involve running a game simulation or evaluating game states.
-        """
-        # For now, return a placeholder fitness based on feature values
-        # In a real implementation, this would:
-        # 1. Generate a sequence of 27 blocks using the seed
-        # 2. Simulate gameplay using the chromosome's weights in the heuristic
-        # 3. Return the final score as fitness
-
-        # Create a test game state
-        test_state = GameState()
-
-        # Simple placeholder: evaluate current state with chromosome's heuristic
-        # This is simplified - real evaluation would involve lookahead/search
-        fitness = chromosome.get_fitness(test_state, self.feature_pool)
-
-        # Add some randomness to make it interesting (would be replaced by real simulation)
-        fitness += random.gauss(0, 0.1)
-
-        return fitness
 
     def _select_parent(self, evaluated: List[Tuple[Chromosome, float]]) -> Chromosome:
         """Select a parent using tournament selection."""
@@ -323,6 +321,10 @@ class GeneticOptimizer:
         print(f"Generation: Best={best_fitness:.2f}, Avg={avg_fitness:.2f}, "
               f"No improv for {self.generation_no_improvement} gens")
 
+        self.evolve_from_evaluated(evaluated)
+
+    def evolve_from_evaluated(self, evaluated):
+        """Create the next generation from a complete ranked evaluation."""
         # Check for adaptive mutation surge
         adaptive_surge = (self.generation_no_improvement >= 3)
         if adaptive_surge:
@@ -334,6 +336,11 @@ class GeneticOptimizer:
         # Elite preservation: keep top individuals
         for i in range(min(self.elite_size, len(evaluated))):
             new_population.append(evaluated[i][0].copy())
+
+        for _ in range(min(self.inject_count, self.population_size - len(new_population))):
+            injected = evaluated[0][0].copy()
+            injected.mutate(min(1.0, self.base_mutation_rate * 2))
+            new_population.append(injected)
 
         # Generate rest through selection, crossover, and mutation
         while len(new_population) < self.population_size:
@@ -360,7 +367,7 @@ class GeneticOptimizer:
         print(f"Population Size: {self.population_size}")
         print(f"Generations: {self.num_generations}")
         print(f"Features: {self.num_features}")
-        print(f"CRN Seeds: {len(self.crn_seeds)} (Common Random Numbers)")
+        print(f"CRN Scenarios: {len(self.scenarios)} (Common Random Numbers)")
         print("=" * 60)
 
         for generation in range(self.num_generations):

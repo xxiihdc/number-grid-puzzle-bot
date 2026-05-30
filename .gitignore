@@ -24,3 +24,8 @@ htmlcov/
 
 .vscode/
 .idea/
+
+training_data/*.json
+!training_data/.gitkeep
+training_runs/*.json
+!training_runs/.gitkeep

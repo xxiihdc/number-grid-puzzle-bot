@@ -3,14 +3,13 @@
 Simple script to run the Number Grid Puzzle Bot.
 """
 
-import sys
 import os
+import sys
 
 # Add the bot directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'bot'))
 
-from bot.main import main
+from bot.cli import run_cli
 
 if __name__ == "__main__":
-    # Run the bot with command line arguments
-    main()
+    raise SystemExit(run_cli())

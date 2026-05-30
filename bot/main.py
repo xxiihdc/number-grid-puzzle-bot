@@ -17,8 +17,8 @@ from features import FeaturePool
 from scoring import evaluate_board
 
 
-def main():
-    """Main function to run the puzzle bot."""
+def run_play_mode():
+    """Run one normal puzzle without importing offline training modules."""
     print("Number Grid Puzzle Bot Initializing...")
     print("=" * 50)
 
@@ -31,16 +31,28 @@ def main():
     # Initialize Expectimax search
     search_engine = ExpectimaxSearch(feature_pool)
 
-    # Check if we should train or play
-    if len(sys.argv) > 1 and sys.argv[1] == "train":
-        from genetics import GeneticOptimizer
+    print("Starting puzzle solving...")
+    play_game(game_state, search_engine)
 
-        print("Starting genetic algorithm training...")
-        optimizer = GeneticOptimizer(feature_pool, search_engine)
-        optimizer.train()
-    else:
-        print("Starting puzzle solving...")
-        play_game(game_state, search_engine)
+
+def run_training_mode(config, output_directory="training_runs"):
+    """Run the offline optimizer only when explicitly requested."""
+    from training_runner import TrainingInterrupted, run_training
+
+    print("Starting genetic algorithm training...")
+    try:
+        summary_path = run_training(config, output_directory)
+    except TrainingInterrupted as error:
+        print(f"Training interrupted. Summary: {error.summary_path}")
+        return error.summary_path
+    print(f"Training summary: {summary_path}")
+    return summary_path
+
+
+def main(argv=None):
+    """Compatibility entry point for direct module execution."""
+    from cli import run_cli
+    return run_cli(argv)
 
 
 def play_game(game_state: GameState, search_engine: ExpectimaxSearch):

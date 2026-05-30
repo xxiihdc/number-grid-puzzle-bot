@@ -62,9 +62,55 @@ Or using the convenience script:
 python run_bot.py train
 ```
 
+Training opens a local terminal configuration flow. Generate a reusable Common Random
+Numbers dataset first:
+
+```bash
+python3 scripts/generate_training_seeds.py \
+  --dataset-id train-default \
+  --purpose training \
+  --master-seed 20260530 \
+  --scenarios 100 \
+  --output training_data/train-default.json
+```
+
+For scripted experiments, pass the GA controls explicitly:
+
+```bash
+python3 run_bot.py train \
+  --non-interactive \
+  --population-size 50 \
+  --generations 100 \
+  --games-per-genome 40 \
+  --mutation-rate 0.20 \
+  --elite-ratio 0.10 \
+  --tournament-size 5 \
+  --inject-ratio 0.10 \
+  --variance-penalty 0.15 \
+  --workers 4 \
+  --seed 20260530 \
+  --training-dataset training_data/train-default.json
+```
+
+Run summaries are written under `training_runs/`. Reevaluate the recorded best genome:
+
+```bash
+python3 run_bot.py replay training_runs/<summary-file>.json
+```
+
 ### To run tests:
 ```bash
 python test_bot.py
+python3 test_training_config.py
+python3 test_training_data.py
+python3 test_training_overlap.py
+python3 test_training_runner.py
+python3 test_training_parallel.py
+python3 test_training_ui.py
+python3 test_training_cli.py
+python3 test_training_records.py
+python3 test_training_replay.py
+python3 test_training_performance.py
 ```
 
 ## Design Document Reference
