@@ -55,6 +55,13 @@ This repository implements an AI bot for the Number Grid Puzzle game. The game u
 - Keep changes scoped to the requested behavior.
 - Do not refactor unrelated files while implementing a feature or fix.
 
+## Living Whitepaper Maintenance
+- Treat `WHITEPAPER.md` as the canonical bilingual project overview and operating manual.
+- For every feature, fix, or refactor, review whitepaper impact.
+- Update `WHITEPAPER.md` when commands, parameters, architecture, generated artifacts,
+  log fields, optimization guidance, operational workflows, or user-facing behavior change.
+- If no update is needed, record that decision in the feature tasks or review notes.
+
 ## Testing
 - Run focused tests for the files changed.
 - Useful commands:
@@ -79,6 +86,7 @@ Follow the constitution in `.specify/memory/constitution.md`:
 ## Active Spec
 The current Speckit active plan referenced by `CLAUDE.md` is:
 
-`specs/002-post-game-score-display/plan.md`
+`specs/006-bilingual-project-whitepaper/plan.md`
 
-Consult the related files under `specs/002-post-game-score-display/` when working on score display behavior.
+Consult the related files under `specs/006-bilingual-project-whitepaper/` when working on
+the canonical project manual and its maintenance governance.

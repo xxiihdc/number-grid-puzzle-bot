@@ -63,6 +63,13 @@ Features include:
 - **Reproducibility:** Log all random seeds; use CRN in GA experiments
 - **Code Reviews:** Focus on algorithm correctness and efficiency
 
+### Living Whitepaper Maintenance
+- Treat `WHITEPAPER.md` as the canonical bilingual project overview and operating manual.
+- For every feature, fix, or refactor, review whitepaper impact.
+- Update `WHITEPAPER.md` when commands, parameters, architecture, generated artifacts,
+  log fields, optimization guidance, operational workflows, or user-facing behavior change.
+- If no update is needed, record that decision in the feature tasks or review notes.
+
 ### Experiment Tracking
 - Weekly self-play tournaments to compare strategy versions
 - A/B testing of heuristic weights using phase-specific genomes
@@ -88,7 +95,7 @@ VII. Action Space Reduction
 6. Proceed with feature implementation following test-first approach
 
 <!-- SPECKIT START -->
-active_plan: specs/005-training-plateau-features/plan.md
+active_plan: specs/006-bilingual-project-whitepaper/plan.md
 <!-- SPECKIT END -->
 
 ## Performance Targets

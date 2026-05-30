@@ -2,6 +2,9 @@
 
 An AI bot designed to play the Number Grid Puzzle game optimally using Expectimax search with dynamic depth and genetic algorithm-optimized heuristics.
 
+For the bilingual project overview, complete command catalog, parameter reference, log
+guide, and optimization workflow, read [WHITEPAPER.md](WHITEPAPER.md).
+
 ## Project Structure
 
 ```

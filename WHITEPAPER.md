@@ -1,0 +1,517 @@
+# Number Grid Puzzle Bot: Project Whitepaper
+
+> Canonical bilingual overview and operating manual.  
+> Trang giới thiệu và hướng dẫn vận hành song ngữ chính thức.
+
+## 1. Purpose / Mục tiêu
+
+### English
+
+This repository implements an AI bot for the Number Grid Puzzle. The bot separates
+real-time inference from offline heuristic training:
+
+- **Inference** chooses a move under a time budget with dynamic-depth Expectimax.
+- **Training** evolves heuristic weights offline with a genetic algorithm (GA).
+- **Evaluation** uses reproducible datasets so changes can be compared fairly.
+
+Use this page as the first operational reference. Detailed feature specs remain under
+`specs/`, and the original algorithm design remains in
+`thiet_ke_thuat_toan_bot_puzzle.md`.
+
+### Tiếng Việt
+
+Repository này triển khai bot AI cho trò chơi Number Grid Puzzle. Bot tách riêng suy
+luận thời gian thực và huấn luyện heuristic offline:
+
+- **Inference** chọn nước đi trong giới hạn thời gian bằng Expectimax có độ sâu động.
+- **Training** tiến hóa trọng số heuristic offline bằng giải thuật di truyền (GA).
+- **Evaluation** dùng bộ dữ liệu tái lập được để so sánh thay đổi một cách công bằng.
+
+Hãy dùng trang này làm tài liệu vận hành đầu tiên. Các đặc tả chi tiết vẫn nằm trong
+`specs/`, còn thiết kế thuật toán gốc nằm trong `thiet_ke_thuat_toan_bot_puzzle.md`.
+
+## 2. Puzzle Rules / Luật chơi
+
+### English
+
+- The grid is `9 x 9`, with coordinates `(0, 0)` through `(8, 8)`.
+- A game has exactly `27` turns.
+- Each turn places one fixed-orientation vertical `3 x 1` block.
+- Every cell value is randomly drawn from `{7, 8, 9, 10}`.
+- A score is created by a continuous horizontal, vertical, or diagonal line of at least
+  three identical numbers.
+- Scored cells remain on the board and can score again later.
+- Valid placements are aligned slots: `x in 0..8`, `y in {0, 3, 6}`.
+- The effective action space is exactly `9 x 3 = 27` slots.
+
+Because `27 blocks x 3 cells = 81 cells`, aligned placement guarantees perfect packing
+of the board. The bot must not search arbitrary cell positions.
+
+### Tiếng Việt
+
+- Bàn chơi có kích thước `9 x 9`, tọa độ từ `(0, 0)` đến `(8, 8)`.
+- Mỗi ván có đúng `27` lượt.
+- Mỗi lượt đặt một block dọc cố định `3 x 1`.
+- Giá trị từng ô được sinh ngẫu nhiên từ `{7, 8, 9, 10}`.
+- Điểm được tạo bởi chuỗi ngang, dọc hoặc chéo liên tục có ít nhất ba số giống nhau.
+- Ô đã ghi điểm vẫn nằm trên bàn và có thể tiếp tục tham gia ghi điểm.
+- Vị trí hợp lệ là slot thẳng hàng: `x in 0..8`, `y in {0, 3, 6}`.
+- Không gian hành động thực tế có đúng `9 x 3 = 27` slot.
+
+Do `27 block x 3 ô = 81 ô`, cách đặt thẳng hàng bảo đảm lấp đầy toàn bộ bàn chơi. Bot
+không được tìm kiếm trên các vị trí ô tùy ý.
+
+## 3. Architecture / Kiến trúc
+
+| Area / Khu vực | Main files / File chính | Responsibility / Trách nhiệm |
+|---|---|---|
+| Game state | `bot/game_state.py` | 1D row-major board, aligned slots, local placement score / Bàn 1D row-major, slot hợp lệ, tính điểm cục bộ |
+| Inference | `bot/expectimax.py` | Real-time dynamic-depth Expectimax and transposition table / Expectimax độ sâu động và cache trạng thái |
+| Features | `bot/features.py` | Heuristic feature extraction / Trích xuất feature heuristic |
+| Training | `bot/genetics.py`, `bot/training_runner.py` | GA evolution, deterministic simulation, multiprocessing, run records / Tiến hóa GA, mô phỏng tái lập, đa tiến trình, log |
+| Training data | `bot/training_data.py` | Reusable Common Random Numbers datasets / Bộ dữ liệu CRN dùng lại |
+| Active weights | `bot/training_weights.py` | Promote and load a trained chromosome / Chọn và tải chromosome đã train |
+| Display | `utils/display.py` | Final board rendering / Hiển thị bàn chơi |
+| CLI | `run_bot.py`, `bot/cli.py` | Play, train, and replay entry points / Điểm vào play, train và replay |
+| Offline comparison | `bot/foresight.py`, `scripts/compare_known_future.py` | Approximate beam-search baseline with known future blocks / Baseline beam search biết trước block |
+
+## 4. Algorithms / Thuật toán
+
+### English
+
+**Inference:** The real-time engine uses dynamic-depth Expectimax:
+
+- Opening, turns `1-10`: depth `2`.
+- Middlegame, turns `11-20`: depth `3`.
+- Endgame, turns `21-27`: depth `4-5` where feasible.
+
+It uses a transposition table and local ray-casting score updates from newly placed
+cells. Runtime inference loads precomputed weights; it does not learn online.
+
+**Training:** The offline GA evolves phase-specific chromosomes:
+
+```text
+H(state) = sum(mask_i * weight_i * feature_i(state))
+```
+
+The optimizer uses feature masks, Common Random Numbers (CRN), elite preservation,
+tournament selection, injected candidates, variance penalties, and adaptive mutation
+pulses after plateaus.
+
+### Tiếng Việt
+
+**Inference:** Engine thời gian thực dùng Expectimax với độ sâu động:
+
+- Đầu game, lượt `1-10`: depth `2`.
+- Giữa game, lượt `11-20`: depth `3`.
+- Cuối game, lượt `21-27`: depth `4-5` khi phù hợp.
+
+Engine dùng transposition table và ray-casting cục bộ từ các ô vừa đặt. Inference chỉ
+tải trọng số đã train; không học online khi đang chơi.
+
+**Training:** GA offline tiến hóa chromosome riêng theo từng giai đoạn:
+
+```text
+H(state) = sum(mask_i * weight_i * feature_i(state))
+```
+
+Optimizer dùng mask feature, Common Random Numbers (CRN), giữ elite, tournament
+selection, candidate bổ sung, variance penalty và mutation pulse khi plateau.
+
+## 5. Heuristic Features / Feature heuristic
+
+### English
+
+The feature pool includes current score, horizontal and diagonal potential pairs,
+column bumpiness, center bias, isolated slots, dead ends, maximum height, per-number
+density, vertical match interfaces, empty-slot count, diagonal cross points, and
+generalized three-cell line-window signals:
+
+- Open one-match windows.
+- Open two-match windows.
+- Blocked windows.
+- Empty cells that can complete multiple lines.
+
+The GA decides which features are active through binary masks. New features should be
+added with mathematical rationale and focused performance checks.
+
+### Tiếng Việt
+
+Feature pool gồm điểm hiện tại, cặp tiềm năng ngang và chéo, độ gồ ghề cột, ưu tiên
+trung tâm, slot cô lập, dead end, chiều cao tối đa, mật độ theo từng số, giao diện match
+dọc, số slot trống, giao điểm chéo và tín hiệu cửa sổ ba ô tổng quát:
+
+- Cửa sổ mở có một số khớp.
+- Cửa sổ mở có hai số khớp.
+- Cửa sổ bị chặn.
+- Ô trống có thể hoàn tất nhiều line.
+
+GA tự quyết định feature nào được bật qua binary mask. Feature mới cần có lập luận toán
+học và kiểm tra hiệu năng tập trung.
+
+## 6. Quick Start / Chạy nhanh
+
+### English
+
+Run one game:
+
+```sh
+python3 run_bot.py
+```
+
+Generate reusable training and validation datasets:
+
+```sh
+python3 scripts/generate_training_seeds.py \
+  --dataset-id train-10m \
+  --purpose training \
+  --master-seed 20260530 \
+  --scenarios 100 \
+  --output training_data/train-10m.json
+
+python3 scripts/generate_training_seeds.py \
+  --dataset-id validation-10m \
+  --purpose validation \
+  --master-seed 20260531 \
+  --scenarios 100 \
+  --output training_data/validation-10m.json
+```
+
+Start interactive training:
+
+```sh
+python3 run_bot.py train
+```
+
+### Tiếng Việt
+
+Chạy một ván:
+
+```sh
+python3 run_bot.py
+```
+
+Sinh dataset training và validation có thể dùng lại:
+
+```sh
+python3 scripts/generate_training_seeds.py \
+  --dataset-id train-10m \
+  --purpose training \
+  --master-seed 20260530 \
+  --scenarios 100 \
+  --output training_data/train-10m.json
+
+python3 scripts/generate_training_seeds.py \
+  --dataset-id validation-10m \
+  --purpose validation \
+  --master-seed 20260531 \
+  --scenarios 100 \
+  --output training_data/validation-10m.json
+```
+
+Bắt đầu training tương tác:
+
+```sh
+python3 run_bot.py train
+```
+
+## 7. Command Catalog / Danh mục command
+
+### Play / Chơi game
+
+```sh
+python3 run_bot.py
+python3 run_bot.py play
+```
+
+### Scripted training / Training bằng command đầy đủ
+
+```sh
+python3 run_bot.py train \
+  --non-interactive \
+  --population-size 40 \
+  --generations 40 \
+  --games-per-genome 20 \
+  --mutation-rate 0.05 \
+  --elite-ratio 0.10 \
+  --tournament-size 5 \
+  --inject-ratio 0.10 \
+  --variance-penalty 0.15 \
+  --workers 8 \
+  --seed 20260530 \
+  --training-dataset training_data/train-10m.json \
+  --validation-dataset training_data/validation-10m.json
+```
+
+The example above is a practical continuation profile. CLI defaults may differ.  
+Ví dụ trên là cấu hình tiếp tục tối ưu thực dụng. Giá trị mặc định của CLI có thể khác.
+
+### Replay a trained candidate / Đánh giá lại candidate đã train
+
+Replay against the recorded training subset / Replay trên tập training đã ghi nhận:
+
+```sh
+python3 run_bot.py replay training_runs/<summary-file>.json
+```
+
+Replay against the full recorded validation dataset / Replay trên toàn bộ tập validation:
+
+```sh
+python3 run_bot.py replay training_runs/<summary-file>.json --dataset validation
+```
+
+### Plot training progress / Vẽ tiến trình training
+
+```sh
+python3 scripts/plot_training_log.py training_runs/<summary-file>.json
+
+python3 scripts/plot_training_log.py \
+  training_runs/<summary-file>.json \
+  --output training_runs/training-progress.png \
+  --no-ui
+```
+
+Use `--no-ui` in headless environments.  
+Dùng `--no-ui` trong môi trường không có giao diện đồ họa.
+
+### Promote active weights / Chọn weight đang hoạt động
+
+```sh
+python3 scripts/sync_latest_weights.py
+```
+
+The newest run summary containing a best chromosome is promoted into
+`training_runs/active_chromosome.json`. Validate promising candidates before trusting
+them in production-like comparisons.
+
+Summary mới nhất có best chromosome sẽ được đưa vào
+`training_runs/active_chromosome.json`. Hãy validation candidate tốt trước khi tin cậy
+trong các so sánh quan trọng.
+
+### Known-future comparison / So sánh với baseline biết trước block
+
+Use an existing scenario:
+
+```sh
+python3 scripts/compare_known_future.py \
+  --dataset training_data/train-10m.json \
+  --scenario-id scenario-0001 \
+  --beam-width 500 \
+  --json-output training_runs/known-future-scenario-0001.json \
+  --no-ui
+```
+
+Generate one new scenario and compare immediately:
+
+```sh
+python3 scripts/compare_known_future.py \
+  --generate-dataset training_data/known-future-demo.json \
+  --master-seed 20260530 \
+  --beam-width 500 \
+  --overwrite \
+  --no-ui
+```
+
+This is an approximate beam-search baseline, not a proof of the absolute optimum.  
+Đây là baseline beam search xấp xỉ, không phải chứng minh nghiệm tối ưu tuyệt đối.
+
+### Discover available flags / Xem flag hiện có
+
+```sh
+python3 run_bot.py --help
+python3 run_bot.py train --help
+python3 run_bot.py replay --help
+python3 scripts/generate_training_seeds.py --help
+python3 scripts/plot_training_log.py --help
+python3 scripts/sync_latest_weights.py --help
+python3 scripts/compare_known_future.py --help
+```
+
+## 8. Training Parameters / Tham số training
+
+| Flag | Valid values / Giá trị hợp lệ | Meaning and tuning effect / Ý nghĩa và ảnh hưởng |
+|---|---|---|
+| `--population-size` | Positive integer / Số nguyên dương | Genomes per generation. Larger values explore more candidates but cost more time. / Số genome mỗi generation. Tăng để khám phá rộng hơn nhưng chạy lâu hơn. |
+| `--generations` | Positive integer / Số nguyên dương | Maximum evolution rounds. Stop early when evidence shows a stable plateau. / Số vòng tối đa. Có thể dừng sớm khi plateau ổn định. |
+| `--games-per-genome` | Positive integer within dataset size / Không vượt số scenario | CRN scenarios used for each candidate. Increase for more stable fitness at higher cost. / Số scenario CRN cho mỗi candidate. Tăng để fitness ổn định hơn nhưng tốn thời gian. |
+| `--mutation-rate` | `0..1` | Base mutation probability. Start near `0.05`; mutation pulses multiply it during plateaus. / Xác suất mutation cơ sở. Nên bắt đầu gần `0.05`; pulse sẽ nhân lên khi plateau. |
+| `--elite-ratio` | `0..1` | Fraction copied unchanged into the next generation. Too high can reduce exploration. / Tỷ lệ elite giữ nguyên. Quá cao làm giảm khám phá. |
+| `--tournament-size` | Positive integer, at most population size / Không vượt population | Parent-selection pressure. Larger values favor strong candidates more aggressively. / Áp lực chọn parent. Tăng để ưu tiên candidate mạnh hơn. |
+| `--inject-ratio` | `0..1` | Fraction of additional mutated candidates derived from the current best. / Tỷ lệ candidate bổ sung được mutate từ best hiện tại. |
+| `--variance-penalty` | Non-negative number / Số không âm | Penalizes unstable scores across scenarios. / Phạt candidate có score dao động mạnh giữa scenario. |
+| `--workers` | Positive integer / Số nguyên dương | Local process workers for candidate evaluation. Tune to available CPU capacity. / Số process cục bộ. Điều chỉnh theo CPU. |
+| `--seed` | Integer / Số nguyên | Reproducibility seed for GA population behavior. / Seed tái lập cho hành vi quần thể GA. |
+| `--training-dataset` | Existing JSON path / Đường dẫn JSON tồn tại | Required CRN training dataset. / Dataset CRN training bắt buộc. |
+| `--validation-dataset` | Existing JSON path / Đường dẫn JSON tồn tại | Optional holdout dataset; use it before promotion decisions. / Dataset holdout tùy chọn; nên dùng trước khi chọn model. |
+| `--output-directory` | Directory path / Đường dẫn thư mục | Location for incremental run summaries and active weights. / Nơi lưu summary tăng dần và active weights. |
+
+## 9. Logs And Diagnostics / Log và chẩn đoán
+
+### English
+
+Training writes incremental JSON summaries under:
+
+```text
+training_runs/train-<timestamp>.json
+```
+
+Important top-level fields:
+
+| Field | Meaning |
+|---|---|
+| `status` | `running`, `completed`, `interrupted`, or `failed` |
+| `config` | Exact GA parameters and dataset paths |
+| `training_dataset`, `validation_dataset` | Dataset identity and checksum |
+| `best_fitness` | Best training fitness found so far |
+| `validation_fitness` | Holdout fitness, normally written after a completed run |
+| `best_chromosome` | Best phase-based masks and weights |
+
+Important generation fields:
+
+| Field | Meaning |
+|---|---|
+| `best_fitness` | Best fitness in this generation |
+| `average_fitness` | Population average |
+| `minimum_fitness` | Population minimum |
+| `elapsed_seconds` | Generation evaluation time |
+| `plateau_diagnostics.chromosome_diversity_ratio` | Exact unique chromosome ratio |
+| `plateau_diagnostics.no_improvement_generations` | Consecutive generations without a global best |
+| `plateau_diagnostics.adaptive_mutation_surge` | Whether the next evolution uses a mutation pulse |
+| `plateau_diagnostics.active_gene_count_*` | Distribution of active masked genes |
+
+### Tiếng Việt
+
+Training ghi summary JSON tăng dần tại:
+
+```text
+training_runs/train-<timestamp>.json
+```
+
+Các field top-level quan trọng:
+
+| Field | Ý nghĩa |
+|---|---|
+| `status` | `running`, `completed`, `interrupted` hoặc `failed` |
+| `config` | Tham số GA và đường dẫn dataset chính xác |
+| `training_dataset`, `validation_dataset` | Danh tính dataset và checksum |
+| `best_fitness` | Fitness training tốt nhất hiện có |
+| `validation_fitness` | Fitness holdout, thường được ghi khi run hoàn tất |
+| `best_chromosome` | Mask và weight theo phase của candidate tốt nhất |
+
+Field theo generation quan trọng:
+
+| Field | Ý nghĩa |
+|---|---|
+| `best_fitness` | Fitness tốt nhất trong generation |
+| `average_fitness` | Trung bình quần thể |
+| `minimum_fitness` | Fitness thấp nhất |
+| `elapsed_seconds` | Thời gian đánh giá generation |
+| `plateau_diagnostics.chromosome_diversity_ratio` | Tỷ lệ chromosome khác nhau hoàn toàn |
+| `plateau_diagnostics.no_improvement_generations` | Số generation liên tiếp không tạo global best |
+| `plateau_diagnostics.adaptive_mutation_surge` | Evolution kế tiếp có dùng mutation pulse không |
+| `plateau_diagnostics.active_gene_count_*` | Phân bố số gene đang bật |
+
+## 10. Optimization Loop / Quy trình tối ưu
+
+### English
+
+1. Generate distinct training and validation CRN datasets.
+2. Run a bounded baseline and preserve its summary.
+3. Change one meaningful variable at a time: features, mutation policy, or GA controls.
+4. Reuse the same CRN datasets and seed for fair comparisons.
+5. Inspect logs every `10-15` generations.
+6. Stop early when best fitness stays flat through several mutation pulses and the
+   population average does not recover.
+7. Replay the best candidate against validation data.
+8. Promote only candidates that improve validation fitness or provide a justified
+   tradeoff.
+9. Run inference performance gates after heuristic changes.
+
+The previous plateau analysis is documented in
+`specs/005-training-plateau-features/quickstart.md`.
+
+### Tiếng Việt
+
+1. Sinh dataset CRN training và validation tách biệt.
+2. Chạy baseline giới hạn và lưu summary.
+3. Mỗi lần chỉ đổi một biến có ý nghĩa: feature, chính sách mutation hoặc tham số GA.
+4. Dùng lại cùng dataset CRN và seed để so sánh công bằng.
+5. Kiểm tra log mỗi `10-15` generation.
+6. Dừng sớm khi best đứng yên qua nhiều mutation pulse và average không hồi phục.
+7. Replay candidate tốt nhất trên validation data.
+8. Chỉ promote candidate cải thiện validation fitness hoặc có tradeoff được giải thích.
+9. Chạy performance gate inference sau khi thay đổi heuristic.
+
+Phân tích plateau trước đây nằm tại
+`specs/005-training-plateau-features/quickstart.md`.
+
+## 11. Tests / Kiểm thử
+
+Run focused checks for changed areas. Useful commands:
+
+```sh
+python3 test_bot.py
+python3 test_display.py
+python3 test_class_vars.py
+python3 test_foresight.py
+python3 test_performance.py
+python3 test_training_config.py
+python3 test_training_data.py
+python3 test_training_overlap.py
+python3 test_training_runner.py
+python3 test_training_parallel.py
+python3 test_training_ui.py
+python3 test_training_cli.py
+python3 test_training_records.py
+python3 test_training_replay.py
+python3 test_training_weights.py
+python3 test_training_mutation.py
+python3 test_training_features.py
+python3 test_training_feature_performance.py
+python3 test_training_performance.py
+```
+
+`test_training_parallel.py` and `test_training_performance.py` use multiprocessing and
+may require a normal host environment rather than a restricted sandbox.
+
+`test_training_parallel.py` và `test_training_performance.py` dùng multiprocessing và có
+thể cần môi trường host thông thường thay vì sandbox giới hạn.
+
+## 12. Generated Artifacts / Artifact được sinh ra
+
+| Path | Purpose / Mục đích |
+|---|---|
+| `training_data/*.json` | Reusable CRN datasets / Dataset CRN dùng lại |
+| `training_runs/train-*.json` | Incremental training summaries / Summary training tăng dần |
+| `training_runs/active_chromosome.json` | Promoted local weights / Weight cục bộ đang dùng |
+| `training_runs/*.png` | Optional charts / Biểu đồ tùy chọn |
+| `training_runs/known-future-*.json` | Optional comparison reports / Report so sánh tùy chọn |
+
+Generated artifacts are ignored by Git unless explicitly preserved for analysis.  
+Artifact sinh ra được Git bỏ qua trừ khi chủ động lưu để phân tích.
+
+## 13. Living Documentation Rule / Quy tắc tài liệu sống
+
+### English
+
+`WHITEPAPER.md` is the canonical project overview and operating manual. Every feature,
+fix, or refactor must review whitepaper impact. Update this page when a change affects
+user-facing behavior, architecture, commands, parameters, generated artifacts, log
+fields, optimization guidance, or operational workflows. If no update is required,
+record that decision in the feature tasks or review notes.
+
+### Tiếng Việt
+
+`WHITEPAPER.md` là trang giới thiệu và hướng dẫn vận hành chính thức. Mọi feature, bugfix
+hoặc refactor đều phải kiểm tra ảnh hưởng lên whitepaper. Cập nhật trang này khi thay đổi
+ảnh hưởng hành vi người dùng, kiến trúc, command, tham số, artifact sinh ra, field log,
+hướng dẫn tối ưu hoặc quy trình vận hành. Nếu không cần cập nhật, ghi nhận quyết định đó
+trong task hoặc review note của feature.
+
+## 14. Deeper References / Tài liệu chi tiết hơn
+
+- `README.md`: short repository entry point / trang vào ngắn gọn.
+- `thiet_ke_thuat_toan_bot_puzzle.md`: original algorithm design / thiết kế thuật toán gốc.
+- `.specify/memory/constitution.md`: mandatory project principles / nguyên tắc bắt buộc.
+- `specs/`: feature specifications, plans, and quickstarts / đặc tả, kế hoạch và quickstart.
+- `AGENTS.md`, `CLAUDE.md`: agent development guidance / hướng dẫn agent phát triển.
