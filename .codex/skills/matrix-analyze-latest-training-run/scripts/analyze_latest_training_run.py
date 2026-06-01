@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize the newest Number Grid Puzzle GA training run without modifying files."""
+"""Summarize the newest GA run and persist a handoff without modifying training state."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime
 import json
 from pathlib import Path
+import sys
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
@@ -38,6 +39,15 @@ def _load_json(path: Path) -> Dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"{path} must contain a JSON object")
     return payload
+
+
+def analysis_path_for_summary(summary_path: Path) -> Path:
+    return summary_path.with_name(f"analysis-{summary_path.stem}.json")
+
+
+def persist_analysis(path: Path, report: Dict[str, Any]) -> None:
+    with path.open("x", encoding="utf-8", errors="strict") as output:
+        output.write(f"{json.dumps(report, indent=2)}\n")
 
 
 def find_latest_summary(directory: Path) -> Tuple[Path, Dict[str, Any]]:
@@ -346,6 +356,7 @@ def render_markdown(report: Dict[str, Any]) -> str:
         "# Latest Training Run Analysis",
         "",
         f"- Summary: `{report['summary_path']}`",
+        f"- Persisted analysis: `{_format(report.get('analysis_path'))}`",
         f"- Status: `{report['status']}` (`{_format(report['stop_reason'])}`)",
         f"- Generations: `{report['generation_count']}` / `{_format(report['configured_generations'])}`",
         f"- Config: population=`{_format(report['population_size'])}`, "
@@ -414,7 +425,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         payload = _load_json(summary_path)
     else:
         summary_path, payload = find_latest_summary(Path(args.summary_directory))
+    analysis_path = analysis_path_for_summary(summary_path)
+    if analysis_path.exists():
+        print(
+            f"WARNING: analysis already exists for old log {summary_path}: {analysis_path}",
+            file=sys.stderr,
+        )
+        return 2
     report = analyze(summary_path, payload, Path(args.active_model), args.trend_window)
+    report["analysis_path"] = str(analysis_path)
+    try:
+        persist_analysis(analysis_path, report)
+    except FileExistsError:
+        print(
+            f"WARNING: analysis already exists for old log {summary_path}: {analysis_path}",
+            file=sys.stderr,
+        )
+        return 2
     if args.json:
         print(json.dumps(report, indent=2))
     else:

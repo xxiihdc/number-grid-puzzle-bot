@@ -33,6 +33,7 @@ review requirements.
 - [x] T009 Validate links, command help, parser checks, and governance references from `specs/006-bilingual-project-whitepaper/quickstart.md`
 - [x] T010 Add a bilingual glossary for training-analysis and GA terminology in `WHITEPAPER.md`
 - [x] T011 Document the versioned latest-training-run analyzer handoff for downstream agents
+- [x] T012 Document persisted analyzer handoffs and the no-overwrite old-log guard
 
 ## Dependencies & Execution Order
 

@@ -358,11 +358,19 @@ python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_
 
 The JSON payload uses `schema_version = 1`, separates measured fields from
 `assessment` inferences and caveats, and provides one structured
-`recommended_next_action`. The analyzer is read-only.
+`recommended_next_action`. Every invocation persists the JSON handoff beside the
+selected summary as `training_runs/analysis-<train-summary-stem>.json`, including when
+stdout is rendered as Markdown. If that artifact already exists, the analyzer warns
+and stops instead of overwriting or re-analyzing an old log. The analyzer is read-only
+with respect to training summaries and active weights.
 
 JSON dùng `schema_version = 1`, tách field đo được khỏi diễn giải và cảnh báo trong
-`assessment`, đồng thời cung cấp một `recommended_next_action` có cấu trúc. Analyzer chỉ
-đọc dữ liệu, không promote weight hoặc tự khởi động training.
+`assessment`, đồng thời cung cấp một `recommended_next_action` có cấu trúc. Analyzer
+luôn lưu JSON handoff cạnh summary đã chọn theo mẫu
+`training_runs/analysis-<train-summary-stem>.json`, kể cả khi stdout hiển thị Markdown.
+Nếu artifact đó đã tồn tại, analyzer cảnh báo và dừng thay vì ghi đè hoặc phân tích lại
+log cũ. Analyzer không sửa summary training, không promote weight hoặc tự khởi động
+training.
 
 ### Promote active weights / Chọn weight đang hoạt động
 
@@ -574,6 +582,7 @@ thể cần môi trường host thông thường thay vì sandbox giới hạn.
 |---|---|
 | `training_data/*.json` | Reusable CRN datasets / Dataset CRN dùng lại |
 | `training_runs/train-*.json` | Incremental training summaries / Summary training tăng dần |
+| `training_runs/analysis-train-*.json` | Persisted analyzer handoffs / Handoff analyzer đã lưu |
 | `training_runs/active_chromosome.json` | Promoted local weights / Weight cục bộ đang dùng |
 | `training_runs/*.png` | Optional charts / Biểu đồ tùy chọn |
 | `training_runs/known-future-*.json` | Optional comparison reports / Report so sánh tùy chọn |

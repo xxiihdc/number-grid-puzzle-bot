@@ -6,6 +6,8 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 
 
@@ -100,10 +102,75 @@ def test_latest_summary_selection(analyzer) -> None:
         assert path == newest
 
 
+def test_cli_persists_analysis_and_stops_on_old_log() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        summary = root / "train-test.json"
+        summary.write_text(
+            json.dumps({"run_id": "train-test", "generation_summaries": []}),
+            encoding="utf-8",
+        )
+        command = [
+            sys.executable,
+            str(SCRIPT),
+            "--summary",
+            str(summary),
+            "--active-model",
+            str(root / "missing-active.json"),
+            "--json",
+        ]
+        first = subprocess.run(command, check=False, capture_output=True, text=True)
+        analysis_path = root / "analysis-train-test.json"
+        assert first.returncode == 0
+        assert analysis_path.exists()
+        persisted = analysis_path.read_text(encoding="utf-8")
+        report = json.loads(persisted)
+        assert report["analysis_path"] == str(analysis_path)
+        assert json.loads(first.stdout) == report
+
+        second = subprocess.run(command, check=False, capture_output=True, text=True)
+        assert second.returncode == 2
+        assert "WARNING: analysis already exists for old log" in second.stderr
+        assert second.stdout == ""
+        assert analysis_path.read_text(encoding="utf-8") == persisted
+
+
+def test_cli_persists_analysis_when_rendering_markdown() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        summary = root / "train-markdown.json"
+        summary.write_text(
+            json.dumps({"run_id": "train-markdown", "generation_summaries": []}),
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--summary",
+                str(summary),
+                "--active-model",
+                str(root / "missing-active.json"),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        analysis_path = root / "analysis-train-markdown.json"
+        assert result.returncode == 0
+        assert "# Latest Training Run Analysis" in result.stdout
+        assert analysis_path.exists()
+        assert json.loads(analysis_path.read_text(encoding="utf-8"))["analysis_path"] == str(
+            analysis_path
+        )
+
+
 def main() -> None:
     analyzer = load_analyzer()
     test_agent_handoff_contract(analyzer)
     test_latest_summary_selection(analyzer)
+    test_cli_persists_analysis_and_stops_on_old_log()
+    test_cli_persists_analysis_when_rendering_markdown()
     print("PASS: latest-training-run skill agent handoff checks")
 
 

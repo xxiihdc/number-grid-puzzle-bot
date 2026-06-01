@@ -1,4 +1,4 @@
 interface:
   display_name: "Analyze Latest Training Run"
   short_description: "Diagnose a Number Grid Puzzle training run"
-  default_prompt: "Use $matrix-analyze-latest-training-run to analyze the latest persisted GA run and produce a reusable agent-handoff report without promoting weights."
+  default_prompt: "Use $matrix-analyze-latest-training-run to analyze the latest persisted GA run, persist a reusable agent-handoff report, and stop with a warning instead of re-analyzing an old log or promoting weights."

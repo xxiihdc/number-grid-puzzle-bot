@@ -5,8 +5,9 @@ description: Analyze the newest Number Grid Puzzle GA training summary and diagn
 
 # Analyze Latest Training Run
 
-Produce an evidence-based report for the newest persisted GA run. Keep analysis
-read-only unless the user explicitly asks to promote weights or start another run.
+Produce an evidence-based report for the newest persisted GA run. Persist only the
+handoff artifact; keep training summaries and active weights read-only unless the user
+explicitly asks to promote weights or start another run.
 
 ## Workflow
 
@@ -17,35 +18,46 @@ read-only unless the user explicitly asks to promote weights or start another ru
      --json
    ```
 
-2. Treat the versioned JSON as the reusable agent handoff. Use the measured fields,
-   `assessment`, and `recommended_next_action`; do not replace them with conclusions
-   inferred from training fitness alone.
+2. The analyzer always persists the versioned JSON handoff beside the selected summary
+   as `training_runs/analysis-<train-summary-stem>.json`. Treat that file as the
+   reusable input for the next skill. Use the measured fields, `assessment`, and
+   `recommended_next_action`; do not replace them with conclusions inferred from
+   training fitness alone.
 
-3. For a user-facing response, summarize the selected summary path, status,
+3. If the analyzer warns that an analysis already exists for an old log and exits with
+   status `2`, report the warning and stop. Do not overwrite the artifact or continue
+   with a repeated analysis.
+
+4. For a user-facing response, summarize the selected summary path, persisted analysis
+   path, status,
    configuration, best and validation fitness, best generation, recent fitness
    movement, plateau diagnostics, active-model relation, assessment, and recommended
    next action.
 
-4. Preserve the distinction between measured facts and inference. Treat a high
+5. Preserve the distinction between measured facts and inference. Treat a high
    diversity ratio as evidence that chromosomes differ, not proof that the search
    explores useful regions.
 
-5. If the newest candidate has a validation dataset but no recorded validation fitness,
+6. If the newest candidate has a validation dataset but no recorded validation fitness,
    offer to run:
 
    ```sh
    python3 run_bot.py replay <summary-path> --dataset validation
    ```
 
-6. If the user requests a comparison with the active chromosome, compare candidates on
+7. If the user requests a comparison with the active chromosome, compare candidates on
    the same validation dataset. Do not infer superiority from training fitness alone.
 
-7. Recommend one concrete next action. Prefer a validation replay before changing GA
+8. Recommend one concrete next action. Prefer a validation replay before changing GA
    parameters when validation evidence is missing.
 
 ## Agent Handoff Contract
 
 - Use `--json` when the output will be passed to another agent.
+- The analyzer always writes `analysis-<train-summary-stem>.json` beside the selected
+  summary, even when stdout is rendered as Markdown.
+- Never overwrite an existing analysis artifact. Treat its presence as evidence that
+  the selected log is old or has already been analyzed, warn the user, and stop.
 - Require `schema_version == 1` and
   `report_type == "matrix_training_run_analysis"` before consuming the payload.
 - `analysis_mode` is `read_only`.
