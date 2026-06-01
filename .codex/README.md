@@ -23,3 +23,8 @@ The mirrored skills describe Speckit commands such as:
 - `speckit-git-*`
 
 If your Codex client supports repo-local skills, point it at `.codex/skills`. Otherwise, install or copy these skills into your Codex skills directory.
+
+## Project Skills
+- `matrix-analyze-latest-training-run`: analyze the newest persisted GA training summary,
+  diagnose convergence and plateau signals, and recommend the next experiment without
+  promoting weights.

@@ -55,6 +55,12 @@ This repository implements an AI bot for the Number Grid Puzzle game. The game u
 - Keep changes scoped to the requested behavior.
 - Do not refactor unrelated files while implementing a feature or fix.
 
+## User Communication
+- Address the user as `Đức`.
+- In every final response, include a concise `Agents / Skills / Tools` section.
+- List every agent, skill, and tool used for the request. Write `none` for any category
+  that was not used.
+
 ## Living Whitepaper Maintenance
 - Treat `WHITEPAPER.md` as the canonical bilingual project overview and operating manual.
 - For every feature, fix, or refactor, review whitepaper impact.

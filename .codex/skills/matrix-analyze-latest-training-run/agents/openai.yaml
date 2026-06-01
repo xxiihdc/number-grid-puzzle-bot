@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyze Latest Training Run"
+  short_description: "Diagnose the newest Number Grid Puzzle training run"
+  default_prompt: "Analyze the latest training run, summarize convergence and plateau signals, and recommend the next experiment without promoting weights."
