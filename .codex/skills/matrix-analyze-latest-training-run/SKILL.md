@@ -13,28 +13,47 @@ read-only unless the user explicitly asks to promote weights or start another ru
 1. Run the bundled analyzer from the repository root:
 
    ```sh
-   python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py
+   python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py \
+     --json
    ```
 
-2. Report the selected summary path, status, configuration, best and validation fitness,
-   best generation, recent fitness movement, plateau diagnostics, active-model relation,
-   and the script recommendation.
+2. Treat the versioned JSON as the reusable agent handoff. Use the measured fields,
+   `assessment`, and `recommended_next_action`; do not replace them with conclusions
+   inferred from training fitness alone.
 
-3. Distinguish measured facts from inference. Treat a high diversity ratio as evidence
-   that chromosomes differ, not proof that the search explores useful regions.
+3. For a user-facing response, summarize the selected summary path, status,
+   configuration, best and validation fitness, best generation, recent fitness
+   movement, plateau diagnostics, active-model relation, assessment, and recommended
+   next action.
 
-4. If the newest candidate has a validation dataset but no recorded validation fitness,
+4. Preserve the distinction between measured facts and inference. Treat a high
+   diversity ratio as evidence that chromosomes differ, not proof that the search
+   explores useful regions.
+
+5. If the newest candidate has a validation dataset but no recorded validation fitness,
    offer to run:
 
    ```sh
    python3 run_bot.py replay <summary-path> --dataset validation
    ```
 
-5. If the user requests a comparison with the active chromosome, compare candidates on
+6. If the user requests a comparison with the active chromosome, compare candidates on
    the same validation dataset. Do not infer superiority from training fitness alone.
 
-6. Recommend one concrete next action. Prefer a validation replay before changing GA
+7. Recommend one concrete next action. Prefer a validation replay before changing GA
    parameters when validation evidence is missing.
+
+## Agent Handoff Contract
+
+- Use `--json` when the output will be passed to another agent.
+- Require `schema_version == 1` and
+  `report_type == "matrix_training_run_analysis"` before consuming the payload.
+- `analysis_mode` is `read_only`.
+- Top-level measured fields remain stable for simple consumers.
+- `datasets`, `plateau_diagnostics`, and `active_model` provide evidence context.
+- `assessment` separates status labels, facts, inferences, and caveats.
+- `recommended_next_action` contains an action code, rationale, optional command, and
+  whether execution requires an explicit user request.
 
 ## Selection Rules
 
@@ -54,7 +73,7 @@ read-only unless the user explicitly asks to promote weights or start another ru
 
 ## Optional Inputs
 
-Analyze a specific summary or emit machine-readable JSON:
+Analyze a specific summary, render a human-readable report, or emit agent-handoff JSON:
 
 ```sh
 python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py \

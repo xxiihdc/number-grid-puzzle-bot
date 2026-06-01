@@ -16,7 +16,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary-directory", default="training_runs")
     parser.add_argument("--active-model", default="training_runs/active_chromosome.json")
     parser.add_argument("--trend-window", type=int, default=10)
-    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit versioned agent-handoff JSON instead of the human-readable report",
+    )
     return parser
 
 
@@ -80,6 +84,12 @@ def _diagnostics(generations: List[Dict[str, Any]]) -> Dict[str, Any]:
         "mutation_pulse_count": sum(
             item.get("adaptive_mutation_surge") is True for item in diagnostics
         ),
+        "mutation_pulse_generations": [
+            generation.get("generation_number")
+            for generation in generations
+            if isinstance(generation.get("plateau_diagnostics"), dict)
+            and generation["plateau_diagnostics"].get("adaptive_mutation_surge") is True
+        ],
         "final_active_gene_count_min": final.get("active_gene_count_min"),
         "final_active_gene_count_average": final.get("active_gene_count_average"),
         "final_active_gene_count_max": final.get("active_gene_count_max"),
@@ -119,28 +129,132 @@ def _difference(left: Any, right: Any) -> Optional[float]:
     return None
 
 
-def _recommendation(report: Dict[str, Any]) -> str:
+def _recommended_next_action(report: Dict[str, Any]) -> Dict[str, Any]:
     status = report["status"]
     if status == "failed":
-        return "Inspect stop_reason and fix the failed run before starting another experiment."
+        return {
+            "action": "inspect_failed_run",
+            "rationale": "The run failed, so its stop reason must be diagnosed before another experiment.",
+            "command": None,
+            "requires_explicit_user_request": False,
+        }
     if not report["generation_count"]:
-        return "Inspect the run setup because no completed generation is available."
+        return {
+            "action": "inspect_run_setup",
+            "rationale": "No completed generation is available for evidence-based tuning.",
+            "command": None,
+            "requires_explicit_user_request": False,
+        }
     if status == "running":
-        return "Continue monitoring the current run; do not start a competing experiment yet."
+        return {
+            "action": "continue_monitoring",
+            "rationale": "The selected run is still active; avoid starting a competing experiment.",
+            "command": None,
+            "requires_explicit_user_request": False,
+        }
     if report["validation_fitness"] is None and report["has_validation_dataset"]:
-        return "Replay the best chromosome on the recorded validation dataset before tuning or promotion."
+        return {
+            "action": "replay_validation",
+            "rationale": "The run records a validation dataset but has no validation fitness.",
+            "command": (
+                f"python3 run_bot.py replay {report['summary_path']} --dataset validation"
+            ),
+            "requires_explicit_user_request": False,
+        }
     if report["validation_fitness"] is None:
-        return "Generate or select a validation CRN dataset before trusting this candidate."
+        return {
+            "action": "select_validation_dataset",
+            "rationale": "No validation evidence is available for this candidate.",
+            "command": None,
+            "requires_explicit_user_request": False,
+        }
     diagnostics = report["plateau_diagnostics"]
     if (
         diagnostics.get("available")
         and (diagnostics.get("final_no_improvement_generations") or 0) >= 3
         and (report["recent_best_fitness_delta"] or 0) <= 0
     ):
-        return "Treat this as a plateau: preserve the candidate and run one controlled exploration experiment."
+        return {
+            "action": "run_controlled_exploration_experiment",
+            "rationale": "Recent best fitness is flat and the no-improvement streak is at least three generations.",
+            "command": None,
+            "requires_explicit_user_request": True,
+        }
     if not report["active_model"].get("same_as_analyzed_run"):
-        return "Compare this candidate with the active chromosome on the same validation dataset before promotion."
-    return "Keep this run as the current baseline and define one controlled follow-up experiment."
+        return {
+            "action": "compare_with_active_model",
+            "rationale": "The analyzed candidate is not the active model; compare both on the same validation dataset.",
+            "command": None,
+            "requires_explicit_user_request": False,
+        }
+    return {
+        "action": "run_controlled_follow_up_experiment",
+        "rationale": "Keep this validated active run as the baseline and define one controlled follow-up experiment.",
+        "command": None,
+        "requires_explicit_user_request": True,
+    }
+
+
+def _assessment(report: Dict[str, Any]) -> Dict[str, Any]:
+    diagnostics = report["plateau_diagnostics"]
+    if not diagnostics.get("available"):
+        plateau_status = "unavailable"
+    elif (
+        (diagnostics.get("final_no_improvement_generations") or 0) >= 3
+        and (report["recent_best_fitness_delta"] or 0) <= 0
+    ):
+        plateau_status = "plateau_signal"
+    elif (diagnostics.get("maximum_no_improvement_generations") or 0) >= 3:
+        plateau_status = "historical_plateau_with_recent_improvement"
+    else:
+        plateau_status = "no_strong_plateau_signal"
+
+    if report["validation_fitness"] is not None:
+        validation_status = "available"
+    elif report["has_validation_dataset"]:
+        validation_status = "dataset_available_replay_required"
+    else:
+        validation_status = "missing_dataset"
+
+    active = report["active_model"]
+    if not active.get("available"):
+        active_model_relation = "unavailable"
+    elif active.get("same_as_analyzed_run"):
+        active_model_relation = "same_run"
+    else:
+        active_model_relation = "different_run"
+
+    facts = [
+        f"Run status is {report['status']}.",
+        f"Completed generations: {report['generation_count']} of {_format(report['configured_generations'])}.",
+        f"Best training fitness: {_format(report['best_fitness'])}.",
+        f"Validation fitness: {_format(report['validation_fitness'])}.",
+    ]
+    inferences = []
+    caveats = [
+        "Training fitness alone does not establish superiority on unseen scenarios.",
+        "A high chromosome diversity ratio shows that chromosomes differ; it does not prove useful exploration.",
+    ]
+    if plateau_status == "historical_plateau_with_recent_improvement":
+        inferences.append(
+            "The run encountered plateau periods but still produced a later improvement."
+        )
+    elif plateau_status == "plateau_signal":
+        inferences.append(
+            "The recent flat trend and current no-improvement streak are evidence of a plateau."
+        )
+    if report["validation_gap"] is not None and report["validation_gap"] < 0:
+        inferences.append(
+            "Validation fitness is below training fitness; treat the negative gap as a generalization warning."
+        )
+    return {
+        "plateau_status": plateau_status,
+        "validation_status": validation_status,
+        "active_model_relation": active_model_relation,
+        "facts": facts,
+        "inferences": inferences,
+        "caveats": caveats,
+    }
 
 
 def analyze(summary_path: Path, payload: Dict[str, Any], active_model: Path,
@@ -162,8 +276,12 @@ def analyze(summary_path: Path, payload: Dict[str, Any], active_model: Path,
         )
     window = best_values[-trend_window:]
     recent_delta = window[-1] - window[0] if len(window) > 1 else None
+    initial_best = best_values[0] if best_values else None
     config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
     report = {
+        "schema_version": 1,
+        "report_type": "matrix_training_run_analysis",
+        "analysis_mode": "read_only",
         "summary_path": str(summary_path),
         "run_id": payload.get("run_id"),
         "status": payload.get("status", "unknown"),
@@ -182,13 +300,32 @@ def analyze(summary_path: Path, payload: Dict[str, Any], active_model: Path,
         "best_generation": best_generation,
         "recent_trend_window": min(trend_window, len(window)),
         "recent_best_fitness_delta": recent_delta,
+        "initial_best_fitness": initial_best,
+        "total_best_fitness_delta": _difference(payload.get("best_fitness"), initial_best),
+        "improvement_generations": [
+            item.get("generation_number")
+            for index, item in enumerate(generations)
+            if index == 0
+            or (
+                isinstance(item.get("best_fitness"), (int, float))
+                and isinstance(generations[index - 1].get("best_fitness"), (int, float))
+                and item["best_fitness"] > generations[index - 1]["best_fitness"]
+            )
+        ],
         "total_generation_seconds": sum(
             _numeric(item.get("elapsed_seconds") for item in generations)
         ),
+        "datasets": {
+            "training": payload.get("training_dataset"),
+            "validation": payload.get("validation_dataset"),
+            "overlap_report": payload.get("overlap_report"),
+        },
         "plateau_diagnostics": _diagnostics(generations),
         "active_model": _active_context(active_model, summary_path, payload),
     }
-    report["recommendation"] = _recommendation(report)
+    report["assessment"] = _assessment(report)
+    report["recommended_next_action"] = _recommended_next_action(report)
+    report["recommendation"] = report["recommended_next_action"]["rationale"]
     return report
 
 
@@ -203,6 +340,8 @@ def _format(value: Any, digits: int = 4) -> str:
 def render_markdown(report: Dict[str, Any]) -> str:
     diagnostics = report["plateau_diagnostics"]
     active = report["active_model"]
+    assessment = report["assessment"]
+    action = report["recommended_next_action"]
     lines = [
         "# Latest Training Run Analysis",
         "",
@@ -227,6 +366,7 @@ def render_markdown(report: Dict[str, Any]) -> str:
             f"- Plateau streak: final=`{_format(diagnostics['final_no_improvement_generations'])}`, "
             f"maximum=`{_format(diagnostics['maximum_no_improvement_generations'])}`",
             f"- Adaptive mutation pulses: `{_format(diagnostics['mutation_pulse_count'])}`",
+            f"- Mutation-pulse generations: `{_format(diagnostics['mutation_pulse_generations'])}`",
             f"- Active genes in final population: min=`{_format(diagnostics['final_active_gene_count_min'])}`, "
             f"average=`{_format(diagnostics['final_active_gene_count_average'])}`, "
             f"max=`{_format(diagnostics['final_active_gene_count_max'])}`",
@@ -240,7 +380,30 @@ def render_markdown(report: Dict[str, Any]) -> str:
         )
     else:
         lines.append("- Active model: `unavailable`")
-    lines.extend(["", f"Recommendation: {report['recommendation']}"])
+    lines.extend([
+        "",
+        "## Assessment",
+        "",
+        f"- Plateau status: `{assessment['plateau_status']}`",
+        f"- Validation status: `{assessment['validation_status']}`",
+        f"- Active-model relation: `{assessment['active_model_relation']}`",
+    ])
+    for inference in assessment["inferences"]:
+        lines.append(f"- Inference: {inference}")
+    for caveat in assessment["caveats"]:
+        lines.append(f"- Caveat: {caveat}")
+    lines.extend([
+        "",
+        "## Recommended Next Action",
+        "",
+        f"- Action: `{action['action']}`",
+        f"- Rationale: {action['rationale']}",
+    ])
+    if action["command"]:
+        lines.append(f"- Command: `{action['command']}`")
+    lines.append(
+        f"- Requires explicit user request: `{_format(action['requires_explicit_user_request'])}`"
+    )
     return "\n".join(lines)
 
 

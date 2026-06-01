@@ -341,6 +341,29 @@ python3 scripts/plot_training_log.py \
 Use `--no-ui` in headless environments.  
 Dùng `--no-ui` trong môi trường không có giao diện đồ họa.
 
+### Analyze latest training run / Phân tích run training mới nhất
+
+Human-readable report / Report cho người đọc:
+
+```sh
+python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py
+```
+
+Versioned JSON handoff for another agent / JSON có version để truyền cho agent khác:
+
+```sh
+python3 .codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py \
+  --json
+```
+
+The JSON payload uses `schema_version = 1`, separates measured fields from
+`assessment` inferences and caveats, and provides one structured
+`recommended_next_action`. The analyzer is read-only.
+
+JSON dùng `schema_version = 1`, tách field đo được khỏi diễn giải và cảnh báo trong
+`assessment`, đồng thời cung cấp một `recommended_next_action` có cấu trúc. Analyzer chỉ
+đọc dữ liệu, không promote weight hoặc tự khởi động training.
+
 ### Promote active weights / Chọn weight đang hoạt động
 
 ```sh
@@ -536,6 +559,7 @@ python3 test_training_mutation.py
 python3 test_training_features.py
 python3 test_training_feature_performance.py
 python3 test_training_performance.py
+python3 test_analyze_latest_training_run_skill.py
 ```
 
 `test_training_parallel.py` and `test_training_performance.py` use multiprocessing and

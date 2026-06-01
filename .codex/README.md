@@ -27,4 +27,4 @@ If your Codex client supports repo-local skills, point it at `.codex/skills`. Ot
 ## Project Skills
 - `matrix-analyze-latest-training-run`: analyze the newest persisted GA training summary,
   diagnose convergence and plateau signals, and recommend the next experiment without
-  promoting weights.
+  promoting weights. Use `--json` for a versioned downstream-agent handoff.
