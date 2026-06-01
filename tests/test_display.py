@@ -8,7 +8,7 @@ import sys
 import os
 
 # Add the project root to the sys.path so we can import from utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
 
 from utils.display import display_final_game_state
 

@@ -17,8 +17,8 @@ with a bounded benchmark.
 
 **Storage**: Existing JSON training summaries and active chromosome files
 
-**Testing**: Existing executable Python checks plus `test_training_features.py` and
-`test_training_feature_performance.py`
+**Testing**: Existing executable Python checks plus `tests/test_training_features.py` and
+`tests/benchmarks/test_training_feature_performance.py`
 
 **Target Platform**: Local offline training on macOS or Linux
 
@@ -47,10 +47,10 @@ bot/features.py                       # line-window feature extraction
 bot/genetics.py                       # chromosome normalization and diagnostics
 bot/training_runner.py                # persisted generation diagnostics
 scripts/plot_training_log.py          # optional diagnostics loading
-test_training_features.py             # controlled-board checks
-test_training_feature_performance.py  # bounded extraction benchmark
-test_training_records.py              # summary diagnostics checks
-test_training_weights.py              # older chromosome migration checks
+tests/test_training_features.py             # controlled-board checks
+tests/benchmarks/test_training_feature_performance.py  # bounded extraction benchmark
+tests/test_training_records.py              # summary diagnostics checks
+tests/test_training_weights.py              # older chromosome migration checks
 ```
 
 ## Complexity Tracking

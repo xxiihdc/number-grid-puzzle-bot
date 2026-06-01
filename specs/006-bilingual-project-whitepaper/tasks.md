@@ -16,7 +16,7 @@ training, features, and generated artifacts.
 CLI help output and confirm log guidance covers plateau diagnostics.
 
 - [x] T003 [US2] Document commands, parameters, logs, headless usage, and optimization workflow in `WHITEPAPER.md`
-- [x] T004 [US2] Validate command examples with CLI help and `python3 test_training_cli.py`
+- [x] T004 [US2] Validate command examples with CLI help and `python3 tests/test_training_cli.py`
 
 ## Phase 3: User Story 3 - Keep Documentation Current (Priority: P3)
 
@@ -34,6 +34,9 @@ review requirements.
 - [x] T010 Add a bilingual glossary for training-analysis and GA terminology in `WHITEPAPER.md`
 - [x] T011 Document the versioned latest-training-run analyzer handoff for downstream agents
 - [x] T012 Document persisted analyzer handoffs and the no-overwrite old-log guard
+- [x] T013 Organize executable checks under `tests/`, separate benchmarks under
+  `tests/benchmarks/`, move manual diagnostics under `scripts/diagnostics/`, and update
+  the canonical manual for the new command paths
 
 ## Dependencies & Execution Order
 

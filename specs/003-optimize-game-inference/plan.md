@@ -19,7 +19,7 @@ phase-specific target depths.
 
 **Storage**: N/A; runtime state and bounded transposition table remain in memory
 
-**Testing**: Executable Python test scripts (`test_bot.py`, `test_performance.py`)
+**Testing**: Executable Python test scripts (`tests/test_bot.py`, `tests/benchmarks/test_performance.py`)
 
 **Target Platform**: Current development machine: macOS arm64
 
@@ -97,8 +97,8 @@ bot/
 ├── features.py
 └── genetics.py
 
-test_bot.py
-test_performance.py
+tests/test_bot.py
+tests/benchmarks/test_performance.py
 ```
 
 **Structure Decision**: Extend the existing single-project bot modules. No external

@@ -3,12 +3,12 @@
 Run focused checks:
 
 ```sh
-python3 test_training_features.py
-python3 test_training_weights.py
-python3 test_training_records.py
-python3 test_training_parallel.py
-python3 test_training_plot.py
-python3 test_training_feature_performance.py
+python3 tests/test_training_features.py
+python3 tests/test_training_weights.py
+python3 tests/test_training_records.py
+python3 tests/test_training_parallel.py
+python3 tests/test_training_plot.py
+python3 tests/benchmarks/test_training_feature_performance.py
 ```
 
 Inspect the recorded plateau:
@@ -33,12 +33,12 @@ could not distinguish feature exhaustion from premature convergence.
 
 ## Extraction Benchmark
 
-On the local development machine, `python3 test_training_feature_performance.py`
+On the local development machine, `python3 tests/benchmarks/test_training_feature_performance.py`
 processed 1,000 representative midgame feature extractions in `0.3852s`, or
 `0.3852 ms/state`. The bounded offline-training threshold is `5.0 ms/state`.
 
 The multi-worker training benchmark remained healthy after expansion:
-`python3 test_training_performance.py` completed in `2.355s` with one worker and
+`python3 tests/benchmarks/test_training_performance.py` completed in `2.355s` with one worker and
 `1.244s` with two workers, a `47.2%` speedup against the `30.0%` target.
 
 ## Validate An Interrupted Best

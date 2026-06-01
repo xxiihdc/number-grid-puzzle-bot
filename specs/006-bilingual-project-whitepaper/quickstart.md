@@ -10,7 +10,7 @@ python3 scripts/generate_training_seeds.py --help
 python3 scripts/plot_training_log.py --help
 python3 scripts/sync_latest_weights.py --help
 python3 scripts/compare_known_future.py --help
-python3 test_training_cli.py
+python3 tests/test_training_cli.py
 ```
 
 Review the canonical manual:

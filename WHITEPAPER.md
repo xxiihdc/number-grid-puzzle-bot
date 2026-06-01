@@ -547,34 +547,45 @@ Phân tích plateau trước đây nằm tại
 
 Run focused checks for changed areas. Useful commands:
 
+Regression checks live under `tests/`. Performance gates and timing reports live under
+`tests/benchmarks/` because they are slower and more sensitive to host load.
+
+Các kiểm tra regression nằm trong `tests/`. Performance gate và báo cáo timing nằm
+trong `tests/benchmarks/` vì chạy chậm hơn và nhạy với tải của máy host.
+
 ```sh
-python3 test_bot.py
-python3 test_display.py
-python3 test_class_vars.py
-python3 test_foresight.py
-python3 test_performance.py
-python3 test_training_config.py
-python3 test_training_data.py
-python3 test_training_overlap.py
-python3 test_training_runner.py
-python3 test_training_parallel.py
-python3 test_training_ui.py
-python3 test_training_cli.py
-python3 test_training_records.py
-python3 test_training_replay.py
-python3 test_training_weights.py
-python3 test_training_mutation.py
-python3 test_training_features.py
-python3 test_training_feature_performance.py
-python3 test_training_performance.py
-python3 test_analyze_latest_training_run_skill.py
+python3 tests/test_bot.py
+python3 tests/test_display.py
+python3 tests/test_foresight.py
+python3 tests/benchmarks/test_performance.py
+python3 tests/test_training_config.py
+python3 tests/test_training_data.py
+python3 tests/test_training_overlap.py
+python3 tests/test_training_runner.py
+python3 tests/test_training_parallel.py
+python3 tests/test_training_ui.py
+python3 tests/test_training_cli.py
+python3 tests/test_training_records.py
+python3 tests/test_training_replay.py
+python3 tests/test_training_weights.py
+python3 tests/test_training_mutation.py
+python3 tests/test_training_features.py
+python3 tests/benchmarks/test_training_feature_performance.py
+python3 tests/benchmarks/test_training_performance.py
+python3 tests/test_analyze_latest_training_run_skill.py
 ```
 
-`test_training_parallel.py` and `test_training_performance.py` use multiprocessing and
+`tests/test_training_parallel.py` and `tests/benchmarks/test_training_performance.py` use multiprocessing and
 may require a normal host environment rather than a restricted sandbox.
 
-`test_training_parallel.py` và `test_training_performance.py` dùng multiprocessing và có
+`tests/test_training_parallel.py` và `tests/benchmarks/test_training_performance.py` dùng multiprocessing và có
 thể cần môi trường host thông thường thay vì sandbox giới hạn.
+
+Manual diagnostics that do not assert application behavior live under
+`scripts/diagnostics/`, for example `python3 scripts/diagnostics/class_vars.py`.
+
+Các script chẩn đoán thủ công không assert hành vi ứng dụng nằm trong
+`scripts/diagnostics/`, ví dụ `python3 scripts/diagnostics/class_vars.py`.
 
 ## 13. Generated Artifacts / Artifact được sinh ra
 

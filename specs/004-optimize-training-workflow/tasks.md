@@ -37,15 +37,15 @@ user story.
 
 ### Tests
 
-- [x] T004 [P] Write failing validation tests for numeric ranges, derived elite and injection counts, tournament size, and dataset capacity in `test_training_config.py`
-- [x] T005 [P] Write failing schema-validation tests for valid and malformed seed datasets in `test_training_data.py`
+- [x] T004 [P] Write failing validation tests for numeric ranges, derived elite and injection counts, tournament size, and dataset capacity in `tests/test_training_config.py`
+- [x] T005 [P] Write failing schema-validation tests for valid and malformed seed datasets in `tests/test_training_data.py`
 
 ### Implementation
 
 - [x] T006 Implement the `TrainingConfig` dataclass, legacy-compatible defaults, derived counts, and field-level validation errors in `bot/training_config.py`
 - [x] T007 Implement `GameplayScenario` and `SeedDataset` dataclasses, canonical checksum helpers, JSON loading, and structural validation in `bot/training_data.py`
-- [x] T008 Extend `test_training_config.py` to verify dataset-aware validation through the public `TrainingConfig` validation API
-- [x] T009 Run `python3 test_training_config.py` and `python3 test_training_data.py` to verify the foundational model checks pass
+- [x] T008 Extend `tests/test_training_config.py` to verify dataset-aware validation through the public `TrainingConfig` validation API
+- [x] T009 Run `python3 tests/test_training_config.py` and `python3 tests/test_training_data.py` to verify the foundational model checks pass
 
 **Checkpoint**: Configuration and persisted scenario files can be validated before any
 training workload starts.
@@ -63,9 +63,9 @@ values and ranking, and one returned result per genome.
 
 ### Tests for User Story 1
 
-- [x] T010 [P] [US1] Write failing tests for deterministic 27-turn simulation, stable tie-breaking, trimmed-mean fitness, variance penalty, and absence of synthetic noise in `test_training_runner.py`
-- [x] T011 [P] [US1] Write failing tests that compare single-worker and multi-worker candidate fitness values and ranking in `test_training_parallel.py`
-- [x] T012 [P] [US1] Write the bounded one-worker versus multi-worker benchmark and 30% acceptance report in `test_training_performance.py`
+- [x] T010 [P] [US1] Write failing tests for deterministic 27-turn simulation, stable tie-breaking, trimmed-mean fitness, variance penalty, and absence of synthetic noise in `tests/test_training_runner.py`
+- [x] T011 [P] [US1] Write failing tests that compare single-worker and multi-worker candidate fitness values and ranking in `tests/test_training_parallel.py`
+- [x] T012 [P] [US1] Write the bounded one-worker versus multi-worker benchmark and 30% acceptance report in `tests/benchmarks/test_training_performance.py`
 
 ### Implementation for User Story 1
 
@@ -75,7 +75,7 @@ values and ranking, and one returned result per genome.
 - [x] T016 [US1] Implement worker initialization that loads the immutable scenario subset once per process and evaluates one serialized genome per task in `bot/training_runner.py`
 - [x] T017 [US1] Implement generation evaluation with configurable worker count, a direct single-worker baseline path, complete-result validation, and explicit worker-failure propagation in `bot/training_runner.py`
 - [x] T018 [US1] Replace placeholder seed loops and Gaussian-noise fitness in `bot/genetics.py` with the generation evaluator from `bot/training_runner.py`
-- [x] T019 [US1] Run `python3 test_training_runner.py`, `python3 test_training_parallel.py`, and `python3 test_training_performance.py` to verify deterministic equivalence and measure local multi-worker speedup
+- [x] T019 [US1] Run `python3 tests/test_training_runner.py`, `python3 tests/test_training_parallel.py`, and `python3 tests/benchmarks/test_training_performance.py` to verify deterministic equivalence and measure local multi-worker speedup
 
 **Checkpoint**: User Story 1 is independently functional. Training fitness now reflects
 completed games and can use multiple CPU workers without changing results.
@@ -93,15 +93,15 @@ separate validation dataset.
 
 ### Tests for User Story 2
 
-- [x] T020 [P] [US2] Write failing tests for deterministic generation, schema metadata, checksums, allowed block values, and overwrite protection in `test_training_data.py`
-- [x] T021 [P] [US2] Write failing tests for partial and complete training-validation scenario overlap reports in `test_training_overlap.py`
+- [x] T020 [P] [US2] Write failing tests for deterministic generation, schema metadata, checksums, allowed block values, and overwrite protection in `tests/test_training_data.py`
+- [x] T021 [P] [US2] Write failing tests for partial and complete training-validation scenario overlap reports in `tests/test_training_overlap.py`
 
 ### Implementation for User Story 2
 
 - [x] T022 [US2] Implement local-RNG scenario generation, dataset metadata creation, checksum persistence, overwrite protection, and JSON saving in `bot/training_data.py`
 - [x] T023 [US2] Implement scenario-checksum overlap detection between training and validation datasets in `bot/training_data.py`
 - [x] T024 [US2] Implement the documented `--dataset-id`, `--purpose`, `--master-seed`, `--scenarios`, `--output`, and explicit overwrite flags in `scripts/generate_training_seeds.py`
-- [x] T025 [US2] Run `python3 test_training_data.py`, `python3 test_training_overlap.py`, and generate temporary training and validation datasets with `scripts/generate_training_seeds.py`
+- [x] T025 [US2] Run `python3 tests/test_training_data.py`, `python3 tests/test_training_overlap.py`, and generate temporary training and validation datasets with `scripts/generate_training_seeds.py`
 
 **Checkpoint**: User Story 2 is independently functional. Developers can persist,
 validate, reuse, and compare deterministic scenario datasets.
@@ -119,15 +119,15 @@ invalid inputs do not start training.
 
 ### Tests for User Story 3
 
-- [x] T026 [P] [US3] Write failing tests for prompt defaults, corrected invalid values, dataset selection, confirmation, and cancellation in `test_training_ui.py`
-- [x] T027 [P] [US3] Write failing CLI parsing tests for interactive mode, `--non-interactive`, all documented GA flags, missing required values, and normal play dispatch in `test_training_cli.py`
+- [x] T026 [P] [US3] Write failing tests for prompt defaults, corrected invalid values, dataset selection, confirmation, and cancellation in `tests/test_training_ui.py`
+- [x] T027 [P] [US3] Write failing CLI parsing tests for interactive mode, `--non-interactive`, all documented GA flags, missing required values, and normal play dispatch in `tests/test_training_cli.py`
 
 ### Implementation for User Story 3
 
 - [x] T028 [US3] Implement terminal prompts, available-dataset display, field descriptions, validation feedback, derived-count preview, and explicit confirmation in `bot/training_ui.py`
 - [x] T029 [US3] Replace the incomplete training argument forwarding with the documented train-mode flags and a shared `TrainingConfig` construction path in `bot/cli.py`
 - [x] T030 [US3] Update `run_bot.py` and `bot/main.py` so play mode remains isolated while train mode opens the UI or accepts non-interactive configuration and invokes the offline runner
-- [x] T031 [US3] Run `python3 test_training_ui.py`, `python3 test_training_cli.py`, and `python3 test_bot.py` to verify configuration workflows and play-mode isolation
+- [x] T031 [US3] Run `python3 tests/test_training_ui.py`, `python3 tests/test_training_cli.py`, and `python3 tests/test_bot.py` to verify configuration workflows and play-mode isolation
 
 **Checkpoint**: User Story 3 is independently functional. Training experiments can be
 configured interactively or scripted without source edits.
@@ -145,8 +145,8 @@ another short run and verify its best available candidate remains recorded.
 
 ### Tests for User Story 4
 
-- [x] T032 [P] [US4] Write failing tests for initial, per-generation, completed, failed, and interrupted JSON summary states in `test_training_records.py`
-- [x] T033 [P] [US4] Write failing replay tests that reconstruct evaluation inputs from a saved run summary and reproduce candidate fitness values in `test_training_replay.py`
+- [x] T032 [P] [US4] Write failing tests for initial, per-generation, completed, failed, and interrupted JSON summary states in `tests/test_training_records.py`
+- [x] T033 [P] [US4] Write failing replay tests that reconstruct evaluation inputs from a saved run summary and reproduce candidate fitness values in `tests/test_training_replay.py`
 
 ### Implementation for User Story 4
 
@@ -154,7 +154,7 @@ another short run and verify its best available candidate remains recorded.
 - [x] T035 [US4] Add generation elapsed time, best, average, and minimum fitness reporting plus final validation-dataset evaluation in `bot/training_runner.py`
 - [x] T036 [US4] Add run-summary replay loading and deterministic candidate reevaluation in `bot/training_runner.py`
 - [x] T037 [US4] Update `bot/main.py` to preserve an interrupted run summary on `KeyboardInterrupt` and print the summary path
-- [x] T038 [US4] Run `python3 test_training_records.py`, `python3 test_training_replay.py`, and execute one short non-interactive training run to verify summary persistence and replay
+- [x] T038 [US4] Run `python3 tests/test_training_records.py`, `python3 tests/test_training_replay.py`, and execute one short non-interactive training run to verify summary persistence and replay
 
 **Checkpoint**: User Story 4 is independently functional. Each experiment leaves an
 auditable summary and can be reevaluated from preserved inputs.
@@ -168,8 +168,8 @@ performance effect.
 
 - [x] T039 [P] Update `README.md` with seed generation, interactive training, scripted training, run-summary replay, and focused test commands
 - [x] T040 [P] Update `.gitignore` if implementation introduces additional generated training artifacts beyond the JSON files covered by T002
-- [x] T041 Run `python3 test_bot.py`, `python3 test_display.py`, `python3 test_class_vars.py`, `python3 test_training_config.py`, `python3 test_training_data.py`, `python3 test_training_overlap.py`, `python3 test_training_runner.py`, `python3 test_training_parallel.py`, `python3 test_training_ui.py`, `python3 test_training_cli.py`, `python3 test_training_records.py`, and `python3 test_training_replay.py`
-- [x] T042 Run `python3 test_training_performance.py`, record the one-worker and multi-worker elapsed times in `specs/004-optimize-training-workflow/quickstart.md`, and report whether the 30% speedup criterion passes on the target machine
+- [x] T041 Run `python3 tests/test_bot.py`, `python3 tests/test_display.py`, `python3 scripts/diagnostics/class_vars.py`, `python3 tests/test_training_config.py`, `python3 tests/test_training_data.py`, `python3 tests/test_training_overlap.py`, `python3 tests/test_training_runner.py`, `python3 tests/test_training_parallel.py`, `python3 tests/test_training_ui.py`, `python3 tests/test_training_cli.py`, `python3 tests/test_training_records.py`, and `python3 tests/test_training_replay.py`
+- [x] T042 Run `python3 tests/benchmarks/test_training_performance.py`, record the one-worker and multi-worker elapsed times in `specs/004-optimize-training-workflow/quickstart.md`, and report whether the 30% speedup criterion passes on the target machine
 - [x] T043 Validate every command in `specs/004-optimize-training-workflow/quickstart.md` against the implemented CLI and correct any stale examples
 
 ---
@@ -220,30 +220,30 @@ performance effect.
 ## Parallel Example: User Story 1
 
 ```text
-Task T010: Write deterministic simulation and fitness tests in test_training_runner.py
-Task T011: Write worker-count equivalence tests in test_training_parallel.py
-Task T012: Write bounded speedup benchmark in test_training_performance.py
+Task T010: Write deterministic simulation and fitness tests in tests/test_training_runner.py
+Task T011: Write worker-count equivalence tests in tests/test_training_parallel.py
+Task T012: Write bounded speedup benchmark in tests/benchmarks/test_training_performance.py
 ```
 
 ## Parallel Example: User Story 2
 
 ```text
-Task T020: Write deterministic dataset generation tests in test_training_data.py
-Task T021: Write overlap-report tests in test_training_overlap.py
+Task T020: Write deterministic dataset generation tests in tests/test_training_data.py
+Task T021: Write overlap-report tests in tests/test_training_overlap.py
 ```
 
 ## Parallel Example: User Story 3
 
 ```text
-Task T026: Write terminal prompt tests in test_training_ui.py
-Task T027: Write train-mode CLI parsing tests in test_training_cli.py
+Task T026: Write terminal prompt tests in tests/test_training_ui.py
+Task T027: Write train-mode CLI parsing tests in tests/test_training_cli.py
 ```
 
 ## Parallel Example: User Story 4
 
 ```text
-Task T032: Write run-summary state tests in test_training_records.py
-Task T033: Write run-summary replay tests in test_training_replay.py
+Task T032: Write run-summary state tests in tests/test_training_records.py
+Task T033: Write run-summary replay tests in tests/test_training_replay.py
 ```
 
 ---

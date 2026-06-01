@@ -5,7 +5,8 @@ import os
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "bot"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "bot"))
 
 from bot.training_config import TrainingConfig
 from bot.training_data import generate_dataset, save_dataset

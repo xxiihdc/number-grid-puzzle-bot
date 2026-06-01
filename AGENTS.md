@@ -71,9 +71,9 @@ This repository implements an AI bot for the Number Grid Puzzle game. The game u
 ## Testing
 - Run focused tests for the files changed.
 - Useful commands:
-  - `python test_bot.py`
-  - `python test_display.py`
-  - `python test_class_vars.py`
+  - `python tests/test_bot.py`
+  - `python tests/test_display.py`
+  - `python tests/benchmarks/test_performance.py`
   - `python run_bot.py`
   - `python run_bot.py train`
 - For search or heuristic changes, add or update tests with expected move outcomes where practical.

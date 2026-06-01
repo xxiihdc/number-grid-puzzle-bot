@@ -17,9 +17,11 @@ matrix/
 │   ├── genetics.py      # Genetic algorithm for heuristic optimization
 │   └── features.py      # Feature extraction for inference and training
 ├── utils/               # Utility functions
-├── tests/               # Test files
+├── tests/               # Executable regression checks
+│   └── benchmarks/      # Bounded performance gates and timing reports
+├── scripts/
+│   └── diagnostics/     # Manual diagnostic scripts
 ├── config/              # Configuration files
-├── test_bot.py          # Basic functionality tests
 └── thiet_ke_thuat_toan_bot_puzzle.md  # Original design document
 ```
 
@@ -172,22 +174,34 @@ Omit `--master-seed` to generate a random seed. The command prints the selected 
 Remove `--overwrite` when existing dataset files should be protected.
 
 ### To run tests:
+Regression checks live under `tests/`. Performance gates and timing reports are kept
+separately under `tests/benchmarks/`; see [tests/README.md](tests/README.md).
+
 ```bash
-python test_bot.py
-python3 test_foresight.py
-python3 test_training_config.py
-python3 test_training_data.py
-python3 test_training_overlap.py
-python3 test_training_plot.py
-python3 test_training_runner.py
-python3 test_training_parallel.py
-python3 test_training_ui.py
-python3 test_training_cli.py
-python3 test_training_records.py
-python3 test_training_replay.py
-python3 test_training_weights.py
-python3 test_training_performance.py
+python3 tests/test_bot.py
+python3 tests/test_display.py
+python3 tests/test_foresight.py
+python3 tests/test_training_config.py
+python3 tests/test_training_data.py
+python3 tests/test_training_overlap.py
+python3 tests/test_training_plot.py
+python3 tests/test_training_runner.py
+python3 tests/test_training_parallel.py
+python3 tests/test_training_ui.py
+python3 tests/test_training_cli.py
+python3 tests/test_training_records.py
+python3 tests/test_training_replay.py
+python3 tests/test_training_weights.py
+python3 tests/test_training_mutation.py
+python3 tests/test_training_features.py
+python3 tests/test_analyze_latest_training_run_skill.py
+python3 tests/benchmarks/test_performance.py
+python3 tests/benchmarks/test_training_feature_performance.py
+python3 tests/benchmarks/test_training_performance.py
 ```
+
+Manual diagnostics that do not assert application behavior live under
+`scripts/diagnostics/`.
 
 ## Design Document Reference
 

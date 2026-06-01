@@ -23,10 +23,10 @@ write JSON run summaries that preserve enough information to reproduce an experi
 **Storage**: Versioned JSON files for seed datasets and training-run summaries
 
 **Testing**: Executable Python test scripts following the repository pattern
-(`test_training_config.py`, `test_training_data.py`, `test_training_overlap.py`,
-`test_training_runner.py`, `test_training_parallel.py`, `test_training_ui.py`,
-`test_training_cli.py`, `test_training_records.py`, `test_training_replay.py`,
-`test_training_performance.py`)
+(`tests/test_training_config.py`, `tests/test_training_data.py`, `tests/test_training_overlap.py`,
+`tests/test_training_runner.py`, `tests/test_training_parallel.py`, `tests/test_training_ui.py`,
+`tests/test_training_cli.py`, `tests/test_training_records.py`, `tests/test_training_replay.py`,
+`tests/benchmarks/test_training_performance.py`)
 
 **Target Platform**: Local macOS or Linux development machine with one or more CPU
 cores; offline operation
@@ -137,16 +137,16 @@ training_runs/
 └── .gitkeep
 
 run_bot.py
-test_training_config.py
-test_training_data.py
-test_training_overlap.py
-test_training_runner.py
-test_training_parallel.py
-test_training_ui.py
-test_training_cli.py
-test_training_records.py
-test_training_replay.py
-test_training_performance.py
+tests/test_training_config.py
+tests/test_training_data.py
+tests/test_training_overlap.py
+tests/test_training_runner.py
+tests/test_training_parallel.py
+tests/test_training_ui.py
+tests/test_training_cli.py
+tests/test_training_records.py
+tests/test_training_replay.py
+tests/benchmarks/test_training_performance.py
 ```
 
 **Structure Decision**: Extend the existing single-project Python CLI. Keep GA evolution

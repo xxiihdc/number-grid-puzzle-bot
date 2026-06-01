@@ -27,7 +27,7 @@ BOT_INFERENCE_LOG_PATH=/private/tmp/inference.log python3 run_bot.py
 ## Run Functional Checks
 
 ```bash
-python3 test_bot.py
+python3 tests/test_bot.py
 ```
 
 This validates state mutation, deterministic block placement, valid timeout fallback,
@@ -36,7 +36,7 @@ non-mutating search, and complete 27-turn packing.
 ## Run the Performance Gate
 
 ```bash
-python3 test_performance.py
+python3 tests/benchmarks/test_performance.py
 ```
 
 The benchmark runs ten fixed-seed games and measures only `search()` calls. It prints

@@ -12,7 +12,7 @@ import tempfile
 
 
 SCRIPT = (
-    Path(__file__).parent
+    Path(__file__).parent.parent
     / ".codex/skills/matrix-analyze-latest-training-run/scripts/analyze_latest_training_run.py"
 )
 

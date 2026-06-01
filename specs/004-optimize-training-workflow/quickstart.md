@@ -86,16 +86,16 @@ baseline genome and initializes the remaining population around it.
 ## Run Focused Checks
 
 ```bash
-python3 test_training_config.py
-python3 test_training_data.py
-python3 test_training_overlap.py
-python3 test_training_runner.py
-python3 test_training_parallel.py
-python3 test_training_ui.py
-python3 test_training_cli.py
-python3 test_training_records.py
-python3 test_training_replay.py
-python3 test_training_performance.py
+python3 tests/test_training_config.py
+python3 tests/test_training_data.py
+python3 tests/test_training_overlap.py
+python3 tests/test_training_runner.py
+python3 tests/test_training_parallel.py
+python3 tests/test_training_ui.py
+python3 tests/test_training_cli.py
+python3 tests/test_training_records.py
+python3 tests/test_training_replay.py
+python3 tests/benchmarks/test_training_performance.py
 ```
 
 The performance check compares a bounded workload with one worker and multiple workers.
