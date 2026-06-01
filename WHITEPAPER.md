@@ -118,7 +118,74 @@ H(state) = sum(mask_i * weight_i * feature_i(state))
 Optimizer dùng mask feature, Common Random Numbers (CRN), giữ elite, tournament
 selection, candidate bổ sung, variance penalty và mutation pulse khi plateau.
 
-## 5. Heuristic Features / Feature heuristic
+## 5. Glossary / Thuật ngữ
+
+Các thuật ngữ tiếng Anh dưới đây được giữ lại trong log, command và phần phân tích để
+khớp với tên kỹ thuật trong code. Bảng này giải thích nghĩa của chúng trong phạm vi
+project.
+
+### Core Concepts / Khái niệm cốt lõi
+
+| Term / Thuật ngữ | Meaning in this project / Ý nghĩa trong project |
+|---|---|
+| **Inference** | Quá trình bot dùng model hiện có để chọn nước đi khi đang chơi. Inference không tự học thêm. |
+| **Training** | Quá trình tối ưu offline trước khi chơi để tìm bộ trọng số heuristic tốt hơn. |
+| **Model** | Cách bot chấm điểm và chọn nước đi; trong project này model chủ yếu được xác định bởi chromosome heuristic. |
+| **Heuristic** | Hàm ước lượng chất lượng của một trạng thái bàn cờ khi search chưa thể mô phỏng hết tương lai. |
+| **Feature** | Một tín hiệu số mô tả trạng thái, ví dụ điểm hiện tại, số slot trống hoặc tiềm năng tạo line. |
+| **Weight** | Hệ số thể hiện mức ảnh hưởng của một feature lên điểm heuristic. |
+| **Mask** | Cờ bật hoặc tắt một feature. `mask = 1` nghĩa là feature được dùng; `mask = 0` nghĩa là bỏ qua. |
+| **Expectimax** | Thuật toán search xét cả lựa chọn của bot và các block ngẫu nhiên có thể xuất hiện. |
+| **Phase** | Một giai đoạn của ván chơi: đầu game, giữa game hoặc cuối game. Mỗi phase có thể dùng weight khác nhau. |
+| **Baseline** | Mốc tham chiếu hiện tại để so sánh experiment mới. Baseline không mặc nhiên là nghiệm tối ưu. |
+| **Experiment** | Một lần thử có kiểm soát để đo tác động của thay đổi. Nên chỉ đổi một biến có ý nghĩa mỗi experiment. |
+
+### Genetic Algorithm / Giải thuật di truyền
+
+| Term / Thuật ngữ | Meaning in this project / Ý nghĩa trong project |
+|---|---|
+| **Genetic Algorithm (GA)** | Phương pháp tối ưu mô phỏng tiến hóa: tạo nhiều candidate, đánh giá, chọn candidate tốt và biến đổi chúng qua nhiều vòng. |
+| **Gene** | Một thành phần nhỏ của chromosome; ở đây thường là cặp `mask` và `weight` của một feature trong một phase. |
+| **Chromosome** hoặc **genome** | Toàn bộ bộ gene mô tả một candidate model. Project dùng chromosome theo phase đầu, giữa và cuối game. |
+| **Candidate** | Một chromosome đang được đánh giá hoặc cân nhắc sử dụng. |
+| **Population** | Tập hợp candidate được đánh giá trong cùng một generation. |
+| **Generation** | Một vòng tiến hóa: đánh giá population hiện tại rồi tạo population kế tiếp. |
+| **Fitness** | Điểm dùng để xếp hạng candidate trong GA. Training fitness là kết quả trên training dataset, không phải bảo đảm candidate sẽ tốt trên dữ liệu mới. |
+| **Best fitness** | Fitness training cao nhất đã tìm được trong run hoặc generation đang nói tới. |
+| **Global best** | Candidate tốt nhất tính trên toàn bộ các generation đã chạy, không chỉ generation hiện tại. |
+| **Elite** | Nhóm candidate tốt được giữ nguyên sang generation kế tiếp. |
+| **Mutation** | Thay đổi ngẫu nhiên gene để tạo biến thể mới và mở rộng vùng tìm kiếm. |
+| **Mutation rate** | Xác suất mutation cơ sở. |
+| **Adaptive mutation surge** hoặc **mutation pulse** | Đợt tạm thời tăng mutation khi nhiều generation liên tiếp không cải thiện best fitness. |
+| **Active gene** | Gene có `mask = 1`, tức feature tương ứng đang tham gia tính heuristic. |
+
+### Evaluation And Diagnostics / Đánh giá và chẩn đoán
+
+| Term / Thuật ngữ | Meaning in this project / Ý nghĩa trong project |
+|---|---|
+| **Run** | Một lần chạy training với config, dataset và seed cụ thể. |
+| **Summary** | File JSON ghi lại config, tiến trình và kết quả của một run. |
+| **Status** | Trạng thái run, ví dụ `running`, `completed`, `interrupted` hoặc `failed`. |
+| **Config** | Toàn bộ tham số cấu hình của một run, ví dụ population size, số generation và mutation rate. |
+| **Dataset** | Tập scenario dùng lại được để đánh giá candidate một cách tái lập. |
+| **Training dataset** | Tập scenario dùng để tối ưu chromosome. |
+| **Validation dataset** hoặc **holdout dataset** | Tập scenario tách biệt, không dùng để tối ưu trực tiếp; dùng để kiểm tra candidate có tổng quát hóa tốt hay không. |
+| **Validation fitness** | Fitness đo trên validation dataset. Đây là bằng chứng quan trọng trước khi promote weights. |
+| **Validation gap** | Chênh lệch `validation fitness - training fitness`. Gap âm lớn là tín hiệu candidate có thể chưa tổng quát hóa tốt. |
+| **Scenario** | Một chuỗi block tái lập được dùng để đánh giá bot trong một ván. |
+| **Seed** | Số đầu vào giúp tái tạo lại dữ liệu hoặc hành vi ngẫu nhiên của GA. |
+| **Common Random Numbers (CRN)** | Cách so sánh công bằng: các candidate được đánh giá trên cùng scenario ngẫu nhiên. |
+| **Worker** | Process cục bộ thực hiện việc đánh giá candidate. Tăng worker có thể tận dụng thêm CPU. |
+| **Overlap** | Scenario xuất hiện ở cả training dataset và validation dataset. Nên tránh overlap để validation có ý nghĩa. |
+| **Replay** | Chạy đánh giá lại một chromosome đã lưu trên dataset được chọn. |
+| **Convergence** | Xu hướng thuật toán tiến dần tới vùng kết quả ổn định, nơi cải thiện mới ngày càng nhỏ hoặc hiếm. |
+| **Plateau** | Giai đoạn best fitness gần như đứng yên qua nhiều generation. Plateau là tín hiệu cần phân tích, không tự động chứng minh đã đạt tối ưu. |
+| **Diversity** hoặc **chromosome diversity ratio** | Tỷ lệ chromosome khác nhau trong population. Diversity cao cho thấy candidate khác nhau, nhưng không chứng minh chúng đang khám phá vùng hữu ích. |
+| **No-improvement streak** | Số generation liên tiếp chưa tạo global best mới. |
+| **Active weights** | Bộ chromosome đã được chọn để inference cục bộ sử dụng. |
+| **Promote weights** | Đưa chromosome đã kiểm chứng vào `training_runs/active_chromosome.json` để trở thành active weights. |
+
+## 6. Heuristic Features / Feature heuristic
 
 ### English
 
@@ -149,7 +216,7 @@ dọc, số slot trống, giao điểm chéo và tín hiệu cửa sổ ba ô t�
 GA tự quyết định feature nào được bật qua binary mask. Feature mới cần có lập luận toán
 học và kiểm tra hiệu năng tập trung.
 
-## 6. Quick Start / Chạy nhanh
+## 7. Quick Start / Chạy nhanh
 
 ### English
 
@@ -215,7 +282,7 @@ Bắt đầu training tương tác:
 python3 run_bot.py train
 ```
 
-## 7. Command Catalog / Danh mục command
+## 8. Command Catalog / Danh mục command
 
 ### Play / Chơi game
 
@@ -327,7 +394,7 @@ python3 scripts/sync_latest_weights.py --help
 python3 scripts/compare_known_future.py --help
 ```
 
-## 8. Training Parameters / Tham số training
+## 9. Training Parameters / Tham số training
 
 | Flag | Valid values / Giá trị hợp lệ | Meaning and tuning effect / Ý nghĩa và ảnh hưởng |
 |---|---|---|
@@ -345,7 +412,7 @@ python3 scripts/compare_known_future.py --help
 | `--validation-dataset` | Existing JSON path / Đường dẫn JSON tồn tại | Optional holdout dataset; use it before promotion decisions. / Dataset holdout tùy chọn; nên dùng trước khi chọn model. |
 | `--output-directory` | Directory path / Đường dẫn thư mục | Location for incremental run summaries and active weights. / Nơi lưu summary tăng dần và active weights. |
 
-## 9. Logs And Diagnostics / Log và chẩn đoán
+## 10. Logs And Diagnostics / Log và chẩn đoán
 
 ### English
 
@@ -411,7 +478,7 @@ Field theo generation quan trọng:
 | `plateau_diagnostics.adaptive_mutation_surge` | Evolution kế tiếp có dùng mutation pulse không |
 | `plateau_diagnostics.active_gene_count_*` | Phân bố số gene đang bật |
 
-## 10. Optimization Loop / Quy trình tối ưu
+## 11. Optimization Loop / Quy trình tối ưu
 
 ### English
 
@@ -445,7 +512,7 @@ The previous plateau analysis is documented in
 Phân tích plateau trước đây nằm tại
 `specs/005-training-plateau-features/quickstart.md`.
 
-## 11. Tests / Kiểm thử
+## 12. Tests / Kiểm thử
 
 Run focused checks for changed areas. Useful commands:
 
@@ -477,7 +544,7 @@ may require a normal host environment rather than a restricted sandbox.
 `test_training_parallel.py` và `test_training_performance.py` dùng multiprocessing và có
 thể cần môi trường host thông thường thay vì sandbox giới hạn.
 
-## 12. Generated Artifacts / Artifact được sinh ra
+## 13. Generated Artifacts / Artifact được sinh ra
 
 | Path | Purpose / Mục đích |
 |---|---|
@@ -490,7 +557,7 @@ thể cần môi trường host thông thường thay vì sandbox giới hạn.
 Generated artifacts are ignored by Git unless explicitly preserved for analysis.  
 Artifact sinh ra được Git bỏ qua trừ khi chủ động lưu để phân tích.
 
-## 13. Living Documentation Rule / Quy tắc tài liệu sống
+## 14. Living Documentation Rule / Quy tắc tài liệu sống
 
 ### English
 
@@ -508,7 +575,7 @@ hoặc refactor đều phải kiểm tra ảnh hưởng lên whitepaper. Cập n
 hướng dẫn tối ưu hoặc quy trình vận hành. Nếu không cần cập nhật, ghi nhận quyết định đó
 trong task hoặc review note của feature.
 
-## 14. Deeper References / Tài liệu chi tiết hơn
+## 15. Deeper References / Tài liệu chi tiết hơn
 
 - `README.md`: short repository entry point / trang vào ngắn gọn.
 - `thiet_ke_thuat_toan_bot_puzzle.md`: original algorithm design / thiết kế thuật toán gốc.

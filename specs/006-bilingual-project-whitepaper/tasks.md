@@ -31,6 +31,7 @@ review requirements.
 
 - [x] T008 Run `git diff --check` and verify all Speckit checklists in `specs/006-bilingual-project-whitepaper/checklists/requirements.md`
 - [x] T009 Validate links, command help, parser checks, and governance references from `specs/006-bilingual-project-whitepaper/quickstart.md`
+- [x] T010 Add a bilingual glossary for training-analysis and GA terminology in `WHITEPAPER.md`
 
 ## Dependencies & Execution Order
 
