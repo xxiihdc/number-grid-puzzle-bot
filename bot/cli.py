@@ -24,6 +24,11 @@ def build_parser() -> argparse.ArgumentParser:
     train.add_argument("--training-dataset")
     train.add_argument("--validation-dataset")
     train.add_argument("--output-directory", default="training_runs")
+    train.add_argument("--disable-watchdog", action="store_true")
+    train.add_argument("--watchdog-patience", type=int)
+    train.add_argument("--watchdog-min-delta", type=float)
+    train.add_argument("--watchdog-min-generations", type=int)
+    train.add_argument("--watchdog-average-recovery", type=float)
     replay = subparsers.add_parser("replay", help="Replay the best candidate from a run")
     replay.add_argument("summary_path")
     replay.add_argument("--dataset", choices=("training", "validation"), default="training")
@@ -47,8 +52,15 @@ def config_from_args(args):
         "reproducibility_seed": args.seed,
         "training_dataset_path": args.training_dataset,
         "validation_dataset_path": args.validation_dataset,
+        "watchdog_patience": args.watchdog_patience,
+        "watchdog_min_delta": args.watchdog_min_delta,
+        "watchdog_min_generations": args.watchdog_min_generations,
+        "watchdog_average_recovery": args.watchdog_average_recovery,
     }
-    return replace(TrainingConfig(), **{key: value for key, value in mapping.items() if value is not None})
+    overrides = {key: value for key, value in mapping.items() if value is not None}
+    if args.disable_watchdog:
+        overrides["watchdog_enabled"] = False
+    return replace(TrainingConfig(), **overrides)
 
 
 def run_cli(argv=None) -> int:

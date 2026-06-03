@@ -44,6 +44,13 @@ class TrainingInterrupted(KeyboardInterrupt):
         super().__init__(str(summary_path))
 
 
+@dataclass(frozen=True)
+class WatchdogDecision:
+    should_stop: bool
+    reason: str
+    details: Dict[str, object]
+
+
 def select_training_slot(state: GameState, block: Sequence[int],
                          chromosome: Chromosome,
                          feature_pool: Optional[FeaturePool] = None) -> Tuple[int, int]:
@@ -168,6 +175,61 @@ def _update_record(path: Path, record: Dict[str, object], **updates) -> None:
     _write_json_atomic(path, record)
 
 
+def evaluate_training_watchdog(config: TrainingConfig,
+                               generation_summaries: Sequence[Dict[str, object]]) -> WatchdogDecision:
+    """Decide whether a completed training generation indicates an ineffective run."""
+    completed_generations = len(generation_summaries)
+    details: Dict[str, object] = {"completed_generations": completed_generations}
+    if not config.watchdog_enabled:
+        return WatchdogDecision(False, "disabled", details)
+    if completed_generations < config.watchdog_min_generations:
+        return WatchdogDecision(False, "minimum_generations", details)
+
+    best_so_far: Optional[float] = None
+    no_improvement = 0
+    for summary in generation_summaries:
+        current_best = float(summary["best_fitness"])
+        if best_so_far is None:
+            best_so_far = current_best
+            no_improvement = 0
+            continue
+        improvement = current_best - best_so_far
+        meaningful_improvement = (
+            improvement > 0
+            if config.watchdog_min_delta == 0
+            else improvement >= config.watchdog_min_delta
+        )
+        if meaningful_improvement:
+            best_so_far = current_best
+            no_improvement = 0
+        else:
+            no_improvement += 1
+    details["no_improvement_generations"] = no_improvement
+    if no_improvement < config.watchdog_patience:
+        return WatchdogDecision(False, "patience", details)
+
+    previous_summaries = generation_summaries[:-1]
+    mutation_pulse_seen = any(
+        bool(summary.get("plateau_diagnostics", {}).get("adaptive_mutation_surge"))
+        for summary in previous_summaries
+    )
+    details["mutation_pulse_seen"] = mutation_pulse_seen
+    if not mutation_pulse_seen:
+        return WatchdogDecision(False, "awaiting_mutation_pulse", details)
+
+    window = generation_summaries[-config.watchdog_patience:]
+    average_values = [float(summary["average_fitness"]) for summary in window]
+    average_recovery = average_values[-1] - min(average_values)
+    details["average_recovery"] = average_recovery
+    if (
+        config.watchdog_average_recovery > 0
+        and average_recovery >= config.watchdog_average_recovery
+    ):
+        return WatchdogDecision(False, "average_recovered", details)
+
+    return WatchdogDecision(True, "watchdog_plateau", details)
+
+
 def run_training(config: TrainingConfig, output_directory: str = "training_runs") -> Path:
     """Execute one auditable optimizer run and persist progress incrementally."""
     from expectimax import ExpectimaxSearch
@@ -243,6 +305,15 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
                 f"best={summary['best_fitness']:.2f} "
                 f"avg={summary['average_fitness']:.2f} elapsed={elapsed:.2f}s"
             )
+            watchdog_decision = evaluate_training_watchdog(
+                config, record["generation_summaries"]
+            )
+            if watchdog_decision.should_stop:
+                record["watchdog_decision"] = {
+                    "reason": watchdog_decision.reason,
+                    "details": watchdog_decision.details,
+                }
+                break
             if generation_number < config.generations:
                 optimizer.evolve_from_evaluated(evaluated)
 
@@ -252,8 +323,13 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
                 config.variance_penalty
             )
             record["validation_fitness"] = validation.fitness
+        stop_reason = (
+            "watchdog_plateau"
+            if record.get("watchdog_decision", {}).get("reason") == "watchdog_plateau"
+            else "max_generations"
+        )
         _update_record(path, record, status="completed", completed_at=_now(),
-                       stop_reason="max_generations")
+                       stop_reason=stop_reason)
         sync_latest_weights(output_directory, active_model_path)
     except KeyboardInterrupt:
         _update_record(path, record, status="interrupted", completed_at=_now(),

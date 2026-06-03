@@ -95,7 +95,7 @@ VII. Action Space Reduction
 6. Proceed with feature implementation following test-first approach
 
 <!-- SPECKIT START -->
-active_plan: specs/006-bilingual-project-whitepaper/plan.md
+active_plan: specs/007-training-watchdog/plan.md
 <!-- SPECKIT END -->
 
 ## Performance Targets

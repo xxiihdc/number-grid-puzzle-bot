@@ -29,6 +29,11 @@ class TrainingConfig:
     reproducibility_seed: int = 20260530
     training_dataset_path: str = ""
     validation_dataset_path: Optional[str] = None
+    watchdog_enabled: bool = True
+    watchdog_patience: int = 12
+    watchdog_min_delta: float = 0.0
+    watchdog_min_generations: int = 10
+    watchdog_average_recovery: float = 0.0
 
     @property
     def elite_count(self) -> int:
@@ -47,6 +52,8 @@ class TrainingConfig:
             ("games_per_genome", self.games_per_genome),
             ("tournament_size", self.tournament_size),
             ("worker_count", self.worker_count),
+            ("watchdog_patience", self.watchdog_patience),
+            ("watchdog_min_generations", self.watchdog_min_generations),
         )
         for field_name, value in positive_integers:
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -66,6 +73,20 @@ class TrainingConfig:
             or self.variance_penalty < 0
         ):
             errors.append("variance_penalty must be non-negative")
+
+        if not isinstance(self.watchdog_enabled, bool):
+            errors.append("watchdog_enabled must be a boolean")
+
+        for field_name, value in (
+            ("watchdog_min_delta", self.watchdog_min_delta),
+            ("watchdog_average_recovery", self.watchdog_average_recovery),
+        ):
+            if (
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or value < 0
+            ):
+                errors.append(f"{field_name} must be non-negative")
 
         if (
             isinstance(self.tournament_size, int)

@@ -306,12 +306,21 @@ python3 run_bot.py train \
   --variance-penalty 0.15 \
   --workers 8 \
   --seed 20260530 \
+  --watchdog-patience 12 \
+  --watchdog-min-generations 10 \
+  --watchdog-min-delta 0.0 \
+  --watchdog-average-recovery 0.0 \
   --training-dataset training_data/train-10m.json \
   --validation-dataset training_data/validation-10m.json
 ```
 
 The example above is a practical continuation profile. CLI defaults may differ.  
 Ví dụ trên là cấu hình tiếp tục tối ưu thực dụng. Giá trị mặc định của CLI có thể khác.
+
+Use `--disable-watchdog` when an experiment must run for the exact `--generations`
+budget regardless of plateau evidence.  
+Dùng `--disable-watchdog` khi thí nghiệm bắt buộc chạy đủ số vòng `--generations` dù
+log đã có tín hiệu plateau.
 
 ### Replay a trained candidate / Đánh giá lại candidate đã train
 
@@ -442,6 +451,11 @@ python3 scripts/compare_known_future.py --help
 | `--training-dataset` | Existing JSON path / Đường dẫn JSON tồn tại | Required CRN training dataset. / Dataset CRN training bắt buộc. |
 | `--validation-dataset` | Existing JSON path / Đường dẫn JSON tồn tại | Optional holdout dataset; use it before promotion decisions. / Dataset holdout tùy chọn; nên dùng trước khi chọn model. |
 | `--output-directory` | Directory path / Đường dẫn thư mục | Location for incremental run summaries and active weights. / Nơi lưu summary tăng dần và active weights. |
+| `--disable-watchdog` | Flag / Cờ bật tắt | Disables automatic plateau stopping for fixed-length experiments. / Tắt dừng sớm do plateau cho thí nghiệm cần chạy đủ vòng. |
+| `--watchdog-patience` | Positive integer / Số nguyên dương | No-improvement generations required before early-stop eligibility. / Số generation không cải thiện cần có trước khi được dừng sớm. |
+| `--watchdog-min-delta` | Non-negative number / Số không âm | Minimum best-fitness improvement treated as meaningful. / Mức cải thiện best fitness tối thiểu được xem là có ý nghĩa. |
+| `--watchdog-min-generations` | Positive integer / Số nguyên dương | Minimum completed generations before watchdog can stop. / Số generation tối thiểu phải hoàn tất trước khi watchdog được dừng. |
+| `--watchdog-average-recovery` | Non-negative number / Số không âm | Required recent average-fitness recovery to keep training after plateau; `0` disables this recovery gate. / Mức hồi phục average fitness gần đây để tiếp tục training sau plateau; `0` tắt gate hồi phục này. |
 
 ## 10. Logs And Diagnostics / Log và chẩn đoán
 
@@ -463,6 +477,8 @@ Important top-level fields:
 | `best_fitness` | Best training fitness found so far |
 | `validation_fitness` | Holdout fitness, normally written after a completed run |
 | `best_chromosome` | Best phase-based masks and weights |
+| `stop_reason` | `max_generations`, `watchdog_plateau`, `keyboard_interrupt`, or failure text |
+| `watchdog_decision` | Details for an automatic watchdog stop, when present |
 
 Important generation fields:
 
@@ -495,6 +511,8 @@ Các field top-level quan trọng:
 | `best_fitness` | Fitness training tốt nhất hiện có |
 | `validation_fitness` | Fitness holdout, thường được ghi khi run hoàn tất |
 | `best_chromosome` | Mask và weight theo phase của candidate tốt nhất |
+| `stop_reason` | `max_generations`, `watchdog_plateau`, `keyboard_interrupt` hoặc mô tả lỗi |
+| `watchdog_decision` | Chi tiết khi training tự dừng do watchdog, nếu có |
 
 Field theo generation quan trọng:
 
@@ -517,9 +535,10 @@ Field theo generation quan trọng:
 2. Run a bounded baseline and preserve its summary.
 3. Change one meaningful variable at a time: features, mutation policy, or GA controls.
 4. Reuse the same CRN datasets and seed for fair comparisons.
-5. Inspect logs every `10-15` generations.
-6. Stop early when best fitness stays flat through several mutation pulses and the
-   population average does not recover.
+5. Let the watchdog inspect every completed generation, or manually inspect logs every
+   `10-15` generations when watchdog is disabled.
+6. Stop early when best fitness stays flat through the configured patience window after
+   mutation-pulse evidence and the population average does not recover.
 7. Replay the best candidate against validation data.
 8. Promote only candidates that improve validation fitness or provide a justified
    tradeoff.
@@ -534,8 +553,10 @@ The previous plateau analysis is documented in
 2. Chạy baseline giới hạn và lưu summary.
 3. Mỗi lần chỉ đổi một biến có ý nghĩa: feature, chính sách mutation hoặc tham số GA.
 4. Dùng lại cùng dataset CRN và seed để so sánh công bằng.
-5. Kiểm tra log mỗi `10-15` generation.
-6. Dừng sớm khi best đứng yên qua nhiều mutation pulse và average không hồi phục.
+5. Để watchdog kiểm tra từng generation đã hoàn tất, hoặc tự kiểm tra log mỗi `10-15`
+   generation khi watchdog bị tắt.
+6. Dừng sớm khi best đứng yên qua cửa sổ patience đã cấu hình sau khi có bằng chứng
+   mutation pulse và average không hồi phục.
 7. Replay candidate tốt nhất trên validation data.
 8. Chỉ promote candidate cải thiện validation fitness hoặc có tradeoff được giải thích.
 9. Chạy performance gate inference sau khi thay đổi heuristic.

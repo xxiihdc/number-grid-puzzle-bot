@@ -17,12 +17,26 @@ def test_train_flags_build_config():
         "--elite-ratio", "0.25", "--tournament-size", "2", "--inject-ratio", "0.25",
         "--variance-penalty", "0.1", "--workers", "1", "--seed", "123",
         "--training-dataset", "train.json", "--validation-dataset", "validation.json",
+        "--watchdog-patience", "8", "--watchdog-min-delta", "0.5",
+        "--watchdog-min-generations", "6", "--watchdog-average-recovery", "1.25",
     ])
     config = config_from_args(args)
     assert config.population_size == 4
     assert config.games_per_genome == 1
     assert config.worker_count == 1
     assert config.training_dataset_path == "train.json"
+    assert config.watchdog_patience == 8
+    assert config.watchdog_min_delta == 0.5
+    assert config.watchdog_min_generations == 6
+    assert config.watchdog_average_recovery == 1.25
+
+
+def test_training_watchdog_can_be_disabled():
+    args = build_parser().parse_args([
+        "train", "--non-interactive", "--disable-watchdog",
+        "--training-dataset", "train.json",
+    ])
+    assert config_from_args(args).watchdog_enabled is False
 
 
 def test_default_mode_is_play():
@@ -46,6 +60,7 @@ def test_replay_accepts_validation_dataset():
 
 if __name__ == "__main__":
     test_train_flags_build_config()
+    test_training_watchdog_can_be_disabled()
     test_default_mode_is_play()
     test_non_interactive_requires_dataset()
     test_replay_accepts_validation_dataset()

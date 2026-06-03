@@ -13,6 +13,7 @@ from bot.training_config import TrainingConfig
 from bot.training_data import generate_dataset, save_dataset
 from bot.training_runner import run_training
 from bot.training_runner import TrainingInterrupted
+from bot.training_runner import evaluate_training_watchdog
 import genetics
 
 
@@ -93,8 +94,79 @@ def test_interrupted_run_preserves_summary():
         assert _only_summary(temp_dir)["status"] == "interrupted"
 
 
+def test_watchdog_plateau_stops_completed_run():
+    original_evaluate = genetics.GeneticOptimizer._evaluate_population
+    original_evolve = genetics.GeneticOptimizer.evolve_from_evaluated
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dataset_path = os.path.join(temp_dir, "dataset.json")
+        save_dataset(generate_dataset("train", "training", 123, 1), dataset_path)
+
+        def plateau(self):
+            if self.best_chromosome is None:
+                self.best_chromosome = self.population[0].copy()
+                self.best_fitness = 10.0
+            else:
+                self.generation_no_improvement += 1
+            self.population[0].fitness = 10.0
+            return [(self.population[0], 10.0), (self.population[1], 9.0)]
+
+        genetics.GeneticOptimizer._evaluate_population = plateau
+        genetics.GeneticOptimizer.evolve_from_evaluated = lambda self, evaluated: None
+        try:
+            summary_path = run_training(
+                TrainingConfig(
+                    population_size=2, generations=8, games_per_genome=1,
+                    elite_ratio=0.5, inject_ratio=0.0, tournament_size=1,
+                    worker_count=1, training_dataset_path=dataset_path,
+                    watchdog_patience=4, watchdog_min_generations=5,
+                    watchdog_average_recovery=0.1,
+                ),
+                temp_dir,
+            )
+        finally:
+            genetics.GeneticOptimizer._evaluate_population = original_evaluate
+            genetics.GeneticOptimizer.evolve_from_evaluated = original_evolve
+
+        with open(summary_path, encoding="utf-8") as source:
+            summary = json.load(source)
+        assert summary["status"] == "completed"
+        assert summary["stop_reason"] == "watchdog_plateau"
+        assert len(summary["generation_summaries"]) < 8
+        assert summary["best_chromosome"]
+        assert summary["best_fitness"] == 10.0
+
+
+def test_watchdog_min_delta_resets_no_improvement_streak():
+    summaries = []
+    best_values = [10.0, 10.0, 10.0, 10.0, 10.5, 10.5, 10.5]
+    for index, best in enumerate(best_values, start=1):
+        summaries.append({
+            "generation_number": index,
+            "best_fitness": best,
+            "average_fitness": 9.0,
+            "plateau_diagnostics": {
+                "adaptive_mutation_surge": index == 4,
+                "no_improvement_generations": index - 1,
+            },
+        })
+    decision = evaluate_training_watchdog(
+        TrainingConfig(
+            training_dataset_path="training.json",
+            watchdog_patience=4,
+            watchdog_min_delta=0.5,
+            watchdog_min_generations=5,
+            watchdog_average_recovery=0.1,
+        ),
+        summaries,
+    )
+    assert decision.should_stop is False
+    assert decision.reason == "patience"
+
+
 if __name__ == "__main__":
     test_short_run_writes_completed_summary()
     test_failed_run_preserves_summary()
     test_interrupted_run_preserves_summary()
+    test_watchdog_plateau_stops_completed_run()
+    test_watchdog_min_delta_resets_no_improvement_streak()
     print("PASS: training record checks")
