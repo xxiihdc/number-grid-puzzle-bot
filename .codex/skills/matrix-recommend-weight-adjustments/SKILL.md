@@ -10,6 +10,9 @@ change in the next training experiment. This skill does not choose an old chromo
 the winner; it studies how weights and masks moved across saved best chromosomes and
 connects those movements to observed outcomes.
 
+By default the recommender searches recursively under `training_runs/`, so experiment
+subdirectories such as `training_runs/experiment-*/train-*.json` are eligible.
+
 ## Workflow
 
 1. Run the bundled analyzer from the repository root:
@@ -34,8 +37,11 @@ connects those movements to observed outcomes.
 3. The analyzer persists a versioned JSON report under:
 
    ```text
-   training_runs/weight-adjustment-recommendation-<timestamp>.json
+   <selected-run-directory>/weight-adjustment-recommendation-<timestamp>.json
    ```
+
+   The ready-to-run candidate experiment is also created under the selected run's
+   directory so follow-up runs continue from the local `active_chromosome.json`.
 
 4. Use the persisted report for the user-facing answer. Preserve the distinction between
    measured facts, directional recommendations, and caveats.
@@ -75,6 +81,10 @@ For older summaries, fall back to:
 Treat recommendations as directional, not causal proof. If only older summaries are
 available, report that evidence scope is limited to generation-best chromosomes.
 
+When a selected run includes a `config` block, reuse that run's CLI parameters and
+dataset paths when constructing the next training command instead of falling back to a
+hardcoded baseline.
+
 ## Safety Rules
 
 - Do not edit `training_runs/active_chromosome.json`.
@@ -87,7 +97,7 @@ available, report that evidence scope is limited to generation-best chromosomes.
 
 ## Optional Inputs
 
-Analyze all summaries:
+Analyze all summaries recursively:
 
 ```sh
 python3 .codex/skills/matrix-recommend-weight-adjustments/scripts/recommend_weight_adjustments.py

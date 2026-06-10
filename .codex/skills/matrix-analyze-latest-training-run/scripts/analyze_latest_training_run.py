@@ -11,11 +11,14 @@ import sys
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
+DEFAULT_ACTIVE_MODEL = "training_runs/active_chromosome.json"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--summary", help="Analyze this run summary instead of the newest run")
     parser.add_argument("--summary-directory", default="training_runs")
-    parser.add_argument("--active-model", default="training_runs/active_chromosome.json")
+    parser.add_argument("--active-model", default=DEFAULT_ACTIVE_MODEL)
     parser.add_argument("--trend-window", type=int, default=10)
     parser.add_argument(
         "--json",
@@ -50,9 +53,13 @@ def persist_analysis(path: Path, report: Dict[str, Any]) -> None:
         output.write(f"{json.dumps(report, indent=2)}\n")
 
 
+def _iter_summary_paths(directory: Path) -> Iterable[Path]:
+    return directory.rglob("train-*.json")
+
+
 def find_latest_summary(directory: Path) -> Tuple[Path, Dict[str, Any]]:
     candidates: List[Tuple[Tuple[int, str, str], Path, Dict[str, Any]]] = []
-    for path in directory.glob("train-*.json"):
+    for path in _iter_summary_paths(directory):
         try:
             payload = _load_json(path)
         except (OSError, json.JSONDecodeError, ValueError):
@@ -68,6 +75,17 @@ def find_latest_summary(directory: Path) -> Tuple[Path, Dict[str, Any]]:
         raise ValueError(f"No parseable train-*.json summaries found in {directory}")
     _, path, payload = max(candidates, key=lambda item: item[0])
     return path, payload
+
+
+def resolve_active_model(summary_path: Path, active_model_arg: str,
+                         summary_directory: Path) -> Path:
+    configured = Path(active_model_arg)
+    if active_model_arg != DEFAULT_ACTIVE_MODEL:
+        return configured
+    sibling_active = summary_path.parent / "active_chromosome.json"
+    if sibling_active.exists() and summary_path.parent != summary_directory:
+        return sibling_active
+    return configured
 
 
 def _numeric(values: Iterable[Any]) -> List[float]:
@@ -420,11 +438,12 @@ def render_markdown(report: Dict[str, Any]) -> str:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
+    summary_directory = Path(args.summary_directory)
     if args.summary:
         summary_path = Path(args.summary)
         payload = _load_json(summary_path)
     else:
-        summary_path, payload = find_latest_summary(Path(args.summary_directory))
+        summary_path, payload = find_latest_summary(summary_directory)
     analysis_path = analysis_path_for_summary(summary_path)
     if analysis_path.exists():
         print(
@@ -432,7 +451,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             file=sys.stderr,
         )
         return 2
-    report = analyze(summary_path, payload, Path(args.active_model), args.trend_window)
+    active_model = resolve_active_model(summary_path, args.active_model, summary_directory)
+    report = analyze(summary_path, payload, active_model, args.trend_window)
     report["analysis_path"] = str(analysis_path)
     try:
         persist_analysis(analysis_path, report)

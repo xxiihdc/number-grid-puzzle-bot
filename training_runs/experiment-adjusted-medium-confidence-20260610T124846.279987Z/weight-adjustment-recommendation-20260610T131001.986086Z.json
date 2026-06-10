@@ -1,0 +1,1560 @@
+{
+  "schema_version": 1,
+  "report_type": "matrix_weight_adjustment_recommendation",
+  "analysis_mode": "read_only",
+  "created_at": "2026-06-10T13:10:01.873464+00:00",
+  "evidence_scope": "population_telemetry_and_generation_best_chromosomes",
+  "runs_analyzed": [
+    {
+      "path": "training_runs/train-20260530T083521.294234Z.json",
+      "run_id": "train-20260530T083521.294234Z",
+      "status": "completed",
+      "stop_reason": "max_generations",
+      "generation_count": 80,
+      "best_fitness": 472.64438543875656,
+      "validation_fitness": 409.07060902160663
+    },
+    {
+      "path": "training_runs/train-20260530T130714.929703Z.json",
+      "run_id": "train-20260530T130714.929703Z",
+      "status": "interrupted",
+      "stop_reason": "keyboard_interrupt",
+      "generation_count": 14,
+      "best_fitness": 477.9197571324198,
+      "validation_fitness": null
+    },
+    {
+      "path": "training_runs/train-20260530T131529.939217Z.json",
+      "run_id": "train-20260530T131529.939217Z",
+      "status": "interrupted",
+      "stop_reason": "keyboard_interrupt",
+      "generation_count": 50,
+      "best_fitness": 578.6131098686928,
+      "validation_fitness": null
+    },
+    {
+      "path": "training_runs/train-20260530T134900.747340Z.json",
+      "run_id": "train-20260530T134900.747340Z",
+      "status": "interrupted",
+      "stop_reason": "keyboard_interrupt",
+      "generation_count": 8,
+      "best_fitness": 580.711788359181,
+      "validation_fitness": null
+    },
+    {
+      "path": "training_runs/train-20260530T143525.498877Z.json",
+      "run_id": "train-20260530T143525.498877Z",
+      "status": "completed",
+      "stop_reason": "max_generations",
+      "generation_count": 65,
+      "best_fitness": 588.8215247459111,
+      "validation_fitness": 443.52411370669773
+    },
+    {
+      "path": "training_runs/train-20260603T155610.085636Z.json",
+      "run_id": "train-20260603T155610.085636Z",
+      "status": "failed",
+      "stop_reason": "[Errno 1] Operation not permitted",
+      "generation_count": 0,
+      "best_fitness": null,
+      "validation_fitness": null
+    },
+    {
+      "path": "training_runs/train-20260610T113235.463004Z.json",
+      "run_id": "train-20260610T113235.463004Z",
+      "status": "completed",
+      "stop_reason": "watchdog_plateau",
+      "generation_count": 13,
+      "best_fitness": 588.8215247459111,
+      "validation_fitness": 467.82784945682357
+    },
+    {
+      "path": "training_runs/train-20260610T114512.137867Z.json",
+      "run_id": "train-20260610T114512.137867Z",
+      "status": "completed",
+      "stop_reason": "watchdog_plateau",
+      "generation_count": 13,
+      "best_fitness": 588.8215247459111,
+      "validation_fitness": 467.82784945682357
+    },
+    {
+      "path": "training_runs/experiment-adjusted-high-confidence-20260610T122628.974558Z/train-20260610T122805.430395Z.json",
+      "run_id": "train-20260610T122805.430395Z",
+      "status": "completed",
+      "stop_reason": "watchdog_plateau",
+      "generation_count": 13,
+      "best_fitness": 588.8215247459111,
+      "validation_fitness": 463.9128606955573
+    },
+    {
+      "path": "training_runs/experiment-adjusted-medium-confidence-20260610T123704.195517Z/train-20260610T124039.080253Z.json",
+      "run_id": "train-20260610T124039.080253Z",
+      "status": "completed",
+      "stop_reason": "watchdog_plateau",
+      "generation_count": 13,
+      "best_fitness": 584.4472985309172,
+      "validation_fitness": 463.6732448841268
+    },
+    {
+      "path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/train-20260610T125501.455320Z.json",
+      "run_id": "train-20260610T125501.455320Z",
+      "status": "completed",
+      "stop_reason": "watchdog_plateau",
+      "generation_count": 13,
+      "best_fitness": 588.8215247459111,
+      "validation_fitness": 467.1795484770519
+    }
+  ],
+  "datasets": {
+    "training_groups": [
+      {
+        "dataset_key": "train-10m|sha256:1f173e238b485c292b756c5b4fe0934040922db1c1ccb788e821ded83a387c6d",
+        "run_count": 6
+      },
+      {
+        "dataset_key": "train-10m|sha256:ecc21009fb2eb5eb22084e628c193fc94814438aff0ff56a335b5903474f4b62",
+        "run_count": 5
+      }
+    ],
+    "validation_groups": [
+      {
+        "dataset_key": "validation-10m|sha256:3d5d5733b3d1eaf33cb7e8d0ec9ccb999d4cdef364ede7f25a267e9c137d78ca",
+        "run_count": 6
+      },
+      {
+        "dataset_key": "validation-10m|sha256:e56df4c2a5bd946b93f474856baf9949802fb5ac0f9b0df90bb46fe1d10ab313",
+        "run_count": 5
+      }
+    ],
+    "validated_run_count": 7,
+    "warnings": [
+      "Multiple validation dataset checksums are present; compare recommendations cautiously.",
+      "Some runs do not include validation_fitness; training fitness is lower-confidence evidence."
+    ]
+  },
+  "latest_training_analysis": {
+    "status": "already_available",
+    "summary_path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/train-20260610T125501.455320Z.json",
+    "analysis_path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/analysis-train-20260610T125501.455320Z.json"
+  },
+  "global_assessment": {
+    "confidence": "medium",
+    "summary": "Analyzed 11 run(s); 57 phase/feature recommendation(s) generated.",
+    "caveats": [
+      "Recommendations are directional and should be validated with controlled runs.",
+      "Population telemetry is available for some summaries; old summaries may still only expose generation-best chromosomes.",
+      "Multiple validation dataset checksums are present; compare recommendations cautiously.",
+      "Some runs do not include validation_fitness; training fitness is lower-confidence evidence."
+    ]
+  },
+  "phase_recommendations": [
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 14,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "high",
+      "signal": 4.048964,
+      "evidence": [
+        "Top-outcome final weights average 88.0561 vs 84.0072 for lower outcomes.",
+        "Improving generation deltas average 13.0704.",
+        "Ranked population top-vs-bottom weight signal averages 0.6075."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 12,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "high",
+      "signal": 3.669141,
+      "evidence": [
+        "Top-outcome final weights average 72.0008 vs 68.3317 for lower outcomes.",
+        "Improving generation deltas average 5.2322.",
+        "Ranked population top-vs-bottom weight signal averages -0.4663."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 9,
+      "decision": "decrease",
+      "suggested_delta": -2.0,
+      "confidence": "high",
+      "signal": -2.793547,
+      "evidence": [
+        "Top-outcome final weights average -84.0415 vs -81.2480 for lower outcomes.",
+        "Improving generation deltas average -16.7984.",
+        "Ranked population top-vs-bottom weight signal averages -0.1757."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 14,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "high",
+      "signal": 2.466064,
+      "evidence": [
+        "Top-outcome final weights average 76.1533 vs 73.6873 for lower outcomes.",
+        "Improving generation deltas average 16.4284.",
+        "Ranked population top-vs-bottom weight signal averages -0.4996."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 13,
+      "decision": "decrease",
+      "suggested_delta": -2.0,
+      "confidence": "high",
+      "signal": -2.135309,
+      "evidence": [
+        "Top-outcome final weights average -82.5572 vs -80.4219 for lower outcomes.",
+        "Improving generation deltas average -4.8279.",
+        "Ranked population top-vs-bottom weight signal averages 0.0248."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 2,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "high",
+      "signal": 1.68944,
+      "evidence": [
+        "Top-outcome final weights average -50.4128 vs -52.1022 for lower outcomes.",
+        "Improving generation deltas average -11.8060.",
+        "Ranked population top-vs-bottom weight signal averages 1.8492."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 2,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "high",
+      "signal": 1.481074,
+      "evidence": [
+        "Top-outcome final weights average 57.4216 vs 55.9059 for lower outcomes.",
+        "Improving generation deltas average 1.4811.",
+        "Ranked population top-vs-bottom weight signal averages 0.3664."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 3,
+      "decision": "decrease",
+      "suggested_delta": -2.0,
+      "confidence": "high",
+      "signal": -1.377153,
+      "evidence": [
+        "Top-outcome final weights average -71.9252 vs -71.7184 for lower outcomes.",
+        "Improving generation deltas average -5.5913.",
+        "Ranked population top-vs-bottom weight signal averages -1.3772."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 15,
+      "decision": "decrease",
+      "suggested_delta": -2.0,
+      "confidence": "high",
+      "signal": -1.283855,
+      "evidence": [
+        "Top-outcome final weights average 9.3697 vs 15.1988 for lower outcomes.",
+        "Improving generation deltas average 2.5141.",
+        "Ranked population top-vs-bottom weight signal averages -1.2839."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 4,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.982344,
+      "evidence": [
+        "Top-outcome final weights average 61.0973 vs 67.9201 for lower outcomes.",
+        "Improving generation deltas average 2.8261.",
+        "Ranked population top-vs-bottom weight signal averages -0.9823."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 3,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.964629,
+      "evidence": [
+        "Top-outcome final weights average 54.2887 vs 57.4372 for lower outcomes.",
+        "Improving generation deltas average 5.1665.",
+        "Ranked population top-vs-bottom weight signal averages -0.9646."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 5,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.94654,
+      "evidence": [
+        "Top-outcome final weights average 96.8459 vs 95.8994 for lower outcomes.",
+        "Improving generation deltas average 7.4231.",
+        "Ranked population top-vs-bottom weight signal averages -0.0326."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 7,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.749423,
+      "evidence": [
+        "Top-outcome final weights average 71.4771 vs 67.2394 for lower outcomes.",
+        "Improving generation deltas average -2.3450.",
+        "Ranked population top-vs-bottom weight signal averages 0.7494."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 1,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.665969,
+      "evidence": [
+        "Top-outcome final weights average 17.9860 vs 17.3201 for lower outcomes.",
+        "Improving generation deltas average 4.5637.",
+        "Ranked population top-vs-bottom weight signal averages -0.5845."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 6,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.550349,
+      "evidence": [
+        "Top-outcome final weights average 81.0878 vs 83.9379 for lower outcomes.",
+        "Improving generation deltas average -0.5503.",
+        "Ranked population top-vs-bottom weight signal averages -0.0756."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 17,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.475005,
+      "evidence": [
+        "Top-outcome final weights average 2.2336 vs 6.9343 for lower outcomes.",
+        "Improving generation deltas average 1.1168.",
+        "Ranked population top-vs-bottom weight signal averages -0.4750."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 11,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.420029,
+      "evidence": [
+        "Top-outcome final weights average -66.7214 vs -67.3182 for lower outcomes.",
+        "Improving generation deltas average -2.2373.",
+        "Ranked population top-vs-bottom weight signal averages 0.4200."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 1,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.376656,
+      "evidence": [
+        "Top-outcome final weights average -45.7272 vs -45.6077 for lower outcomes.",
+        "Improving generation deltas average -1.1211.",
+        "Ranked population top-vs-bottom weight signal averages -0.3767."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 13,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.345997,
+      "evidence": [
+        "Top-outcome final weights average -33.2377 vs -34.1332 for lower outcomes.",
+        "Improving generation deltas average -8.7896.",
+        "Ranked population top-vs-bottom weight signal averages 0.3460."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 16,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.332128,
+      "evidence": [
+        "Top-outcome final weights average -10.3370 vs -17.4174 for lower outcomes.",
+        "Improving generation deltas average -5.8696.",
+        "Ranked population top-vs-bottom weight signal averages 0.3321."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 11,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.332041,
+      "evidence": [
+        "Top-outcome final weights average 36.4302 vs 32.9781 for lower outcomes.",
+        "Improving generation deltas average -1.8681.",
+        "Ranked population top-vs-bottom weight signal averages 0.3320."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 3,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.270074,
+      "evidence": [
+        "Top-outcome final weights average -42.6331 vs -52.8976 for lower outcomes.",
+        "Improving generation deltas average -6.6841.",
+        "Ranked population top-vs-bottom weight signal averages 0.2701."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 18,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.239822,
+      "evidence": [
+        "Top-outcome final weights average -3.9450 vs -5.2600 for lower outcomes.",
+        "Improving generation deltas average 0.0000.",
+        "Ranked population top-vs-bottom weight signal averages 0.2398."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 15,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.182992,
+      "evidence": [
+        "Top-outcome final weights average -21.4946 vs -22.3041 for lower outcomes.",
+        "Improving generation deltas average -0.5138.",
+        "Ranked population top-vs-bottom weight signal averages 0.1830."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 2,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.16017,
+      "evidence": [
+        "Top-outcome final weights average -42.8342 vs -42.9944 for lower outcomes.",
+        "Improving generation deltas average -0.0661.",
+        "Ranked population top-vs-bottom weight signal averages 0.9748."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 5,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.156907,
+      "evidence": [
+        "Top-outcome final weights average 31.9184 vs 32.0753 for lower outcomes.",
+        "Improving generation deltas average 9.0243.",
+        "Ranked population top-vs-bottom weight signal averages -0.8751."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 10,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.130441,
+      "evidence": [
+        "Top-outcome final weights average 40.4756 vs 41.1580 for lower outcomes.",
+        "Improving generation deltas average 14.7364.",
+        "Ranked population top-vs-bottom weight signal averages -0.1304."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 9,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.101929,
+      "evidence": [
+        "Top-outcome final weights average -83.7721 vs -85.4307 for lower outcomes.",
+        "Improving generation deltas average -20.6706.",
+        "Ranked population top-vs-bottom weight signal averages 0.1019."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 8,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.088428,
+      "evidence": [
+        "Top-outcome final weights average -19.3249 vs -16.3800 for lower outcomes.",
+        "Improving generation deltas average 3.6781.",
+        "Ranked population top-vs-bottom weight signal averages -0.0884."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 17,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.078519,
+      "evidence": [
+        "Top-outcome final weights average 3.7608 vs 3.8144 for lower outcomes.",
+        "Improving generation deltas average -0.9246.",
+        "Ranked population top-vs-bottom weight signal averages -0.0785."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 4,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": 0.033446,
+      "evidence": [
+        "Top-outcome final weights average 28.0616 vs 27.5846 for lower outcomes.",
+        "Improving generation deltas average -5.9613.",
+        "Ranked population top-vs-bottom weight signal averages 0.0334."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 0,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "high",
+      "signal": -0.008603,
+      "evidence": [
+        "Top-outcome final weights average 49.3081 vs 49.9496 for lower outcomes.",
+        "Improving generation deltas average 11.3562.",
+        "Ranked population top-vs-bottom weight signal averages -0.0086."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 12,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "medium",
+      "signal": 6.580786,
+      "evidence": [
+        "Top-outcome final weights average 19.2102 vs 19.2102 for lower outcomes.",
+        "Improving generation deltas average 12.7428.",
+        "Ranked population top-vs-bottom weight signal averages 0.4188."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 0,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "medium",
+      "signal": 4.832079,
+      "evidence": [
+        "Top-outcome final weights average 100.0000 vs 100.0000 for lower outcomes.",
+        "Improving generation deltas average 8.6911.",
+        "Ranked population top-vs-bottom weight signal averages 0.9731."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 11,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "medium",
+      "signal": 2.324276,
+      "evidence": [
+        "Top-outcome final weights average -15.8599 vs -15.8599 for lower outcomes.",
+        "Improving generation deltas average 5.1849.",
+        "Ranked population top-vs-bottom weight signal averages -0.5364."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 16,
+      "decision": "increase",
+      "suggested_delta": 2.0,
+      "confidence": "medium",
+      "signal": 1.038468,
+      "evidence": [
+        "Top-outcome final weights average 6.3770 vs 6.7123 for lower outcomes.",
+        "Improving generation deltas average 1.5781.",
+        "Ranked population top-vs-bottom weight signal averages 1.0385."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 5,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.854957,
+      "evidence": [
+        "Top-outcome final weights average 87.4474 vs 87.8511 for lower outcomes.",
+        "Improving generation deltas average 4.8026.",
+        "Ranked population top-vs-bottom weight signal averages 0.8550."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 18,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.839791,
+      "evidence": [
+        "Top-outcome final weights average 11.2955 vs 14.2607 for lower outcomes.",
+        "Improving generation deltas average 2.3070.",
+        "Ranked population top-vs-bottom weight signal averages 0.8398."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 0,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.769495,
+      "evidence": [
+        "Top-outcome final weights average 62.8363 vs 63.6091 for lower outcomes.",
+        "Improving generation deltas average 3.4965.",
+        "Ranked population top-vs-bottom weight signal averages 0.7695."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 7,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.724965,
+      "evidence": [
+        "Top-outcome final weights average -27.5489 vs -25.6408 for lower outcomes.",
+        "Improving generation deltas average 4.1829.",
+        "Ranked population top-vs-bottom weight signal averages 0.7250."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 1,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.623663,
+      "evidence": [
+        "Top-outcome final weights average 31.2082 vs 30.4082 for lower outcomes.",
+        "Improving generation deltas average -0.6237.",
+        "Ranked population top-vs-bottom weight signal averages -0.7752."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 10,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.571831,
+      "evidence": [
+        "Top-outcome final weights average -4.5121 vs -4.5121 for lower outcomes.",
+        "Improving generation deltas average 0.4626.",
+        "Ranked population top-vs-bottom weight signal averages 0.6811."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 12,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.504979,
+      "evidence": [
+        "Top-outcome final weights average 45.7974 vs 47.6336 for lower outcomes.",
+        "Improving generation deltas average 10.6897.",
+        "Ranked population top-vs-bottom weight signal averages 0.5050."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 8,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.472683,
+      "evidence": [
+        "Top-outcome final weights average -77.2535 vs -79.3957 for lower outcomes.",
+        "Improving generation deltas average -4.9420.",
+        "Ranked population top-vs-bottom weight signal averages -0.4727."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 8,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.433108,
+      "evidence": [
+        "Top-outcome final weights average 90.1538 vs 95.6245 for lower outcomes.",
+        "Improving generation deltas average 6.8875.",
+        "Ranked population top-vs-bottom weight signal averages 0.4331."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 10,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.409632,
+      "evidence": [
+        "Top-outcome final weights average 39.7124 vs 48.3049 for lower outcomes.",
+        "Improving generation deltas average 5.3997.",
+        "Ranked population top-vs-bottom weight signal averages 0.4096."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 18,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.350154,
+      "evidence": [
+        "Top-outcome final weights average 21.0509 vs 26.8678 for lower outcomes.",
+        "Improving generation deltas average 4.1108.",
+        "Ranked population top-vs-bottom weight signal averages 0.3502."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 13,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.320104,
+      "evidence": [
+        "Top-outcome final weights average -39.4036 vs -40.2036 for lower outcomes.",
+        "Improving generation deltas average -8.1777.",
+        "Ranked population top-vs-bottom weight signal averages -0.3201."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 6,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.319083,
+      "evidence": [
+        "Top-outcome final weights average -98.2484 vs -100.0000 for lower outcomes.",
+        "Improving generation deltas average -15.7336.",
+        "Ranked population top-vs-bottom weight signal averages -0.3191."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 9,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.279599,
+      "evidence": [
+        "Top-outcome final weights average 29.0525 vs 31.0249 for lower outcomes.",
+        "Improving generation deltas average 16.6148.",
+        "Ranked population top-vs-bottom weight signal averages 0.2796."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 7,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.202292,
+      "evidence": [
+        "Top-outcome final weights average 14.3976 vs 15.6437 for lower outcomes.",
+        "Improving generation deltas average 13.2998.",
+        "Ranked population top-vs-bottom weight signal averages 0.2023."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 16,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.189823,
+      "evidence": [
+        "Top-outcome final weights average -14.9009 vs -14.9009 for lower outcomes.",
+        "Improving generation deltas average 0.0000.",
+        "Ranked population top-vs-bottom weight signal averages 0.3796."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 14,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": 0.162209,
+      "evidence": [
+        "Top-outcome final weights average 32.7712 vs 34.6012 for lower outcomes.",
+        "Improving generation deltas average 0.1622.",
+        "Ranked population top-vs-bottom weight signal averages 1.6316."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 15,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.099,
+      "evidence": [
+        "Top-outcome final weights average 1.5296 vs 0.2192 for lower outcomes.",
+        "Improving generation deltas average -0.0990.",
+        "Ranked population top-vs-bottom weight signal averages -0.1743."
+      ]
+    },
+    {
+      "phase": "opening",
+      "phase_index": 0,
+      "feature_index": 4,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.091082,
+      "evidence": [
+        "Top-outcome final weights average -98.3587 vs -98.8000 for lower outcomes.",
+        "Improving generation deltas average -0.1635.",
+        "Ranked population top-vs-bottom weight signal averages -0.0911."
+      ]
+    },
+    {
+      "phase": "midgame",
+      "phase_index": 1,
+      "feature_index": 17,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.013068,
+      "evidence": [
+        "Top-outcome final weights average -4.0998 vs -5.4664 for lower outcomes.",
+        "Improving generation deltas average -1.3666.",
+        "Ranked population top-vs-bottom weight signal averages -0.0131."
+      ]
+    },
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 6,
+      "decision": "stabilize",
+      "suggested_delta": 0.0,
+      "confidence": "medium",
+      "signal": -0.010896,
+      "evidence": [
+        "Top-outcome final weights average -41.2327 vs -42.1929 for lower outcomes.",
+        "Improving generation deltas average -22.5274.",
+        "Ranked population top-vs-bottom weight signal averages -0.0109."
+      ]
+    }
+  ],
+  "mask_recommendations": [
+    {
+      "phase": "endgame",
+      "phase_index": 2,
+      "feature_index": 18,
+      "decision": "prefer_disabled",
+      "confidence": "medium",
+      "evidence": [
+        "Ranked population top-vs-bottom mask activation signal averages 0.02.",
+        "Top-outcome mask activation ratio 0.25 vs 1.00 for lower outcomes."
+      ]
+    }
+  ],
+  "next_training_command_hints": {
+    "mutation_rate": 0.1,
+    "inject_ratio": 0.15,
+    "tournament_size": 4
+  },
+  "recommended_next_action": {
+    "action": "run_adjusted_weight_experiment",
+    "requires_explicit_user_request": true,
+    "rationale": "Use the highest-confidence directional weight recommendations in a controlled experiment."
+  },
+  "analysis_path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/weight-adjustment-recommendation-20260610T131001.986086Z.json",
+  "candidate_experiment": {
+    "status": "ready",
+    "policy": {
+      "applied_weight_confidences": [
+        "high"
+      ],
+      "applied_mask_confidences": [],
+      "mask_changes_are_advisory": true,
+      "weight_bounds": [
+        -100.0,
+        100.0
+      ]
+    },
+    "baseline_active_model_path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/active_chromosome.json",
+    "candidate_active_model_path": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/experiment-adjusted-high-confidence-20260610T131001.986086Z/active_chromosome.json",
+    "output_directory": "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/experiment-adjusted-high-confidence-20260610T131001.986086Z",
+    "training_command": [
+      "python3",
+      "run_bot.py",
+      "train",
+      "--non-interactive",
+      "--population-size",
+      "40",
+      "--generations",
+      "40",
+      "--games-per-genome",
+      "20",
+      "--mutation-rate",
+      "0.10",
+      "--elite-ratio",
+      "0.10",
+      "--tournament-size",
+      "4",
+      "--inject-ratio",
+      "0.15",
+      "--variance-penalty",
+      "0.15",
+      "--workers",
+      "8",
+      "--seed",
+      "20260610",
+      "--watchdog-patience",
+      "12",
+      "--watchdog-min-generations",
+      "10",
+      "--watchdog-min-delta",
+      "0.0",
+      "--watchdog-average-recovery",
+      "0.0",
+      "--training-dataset",
+      "training_data/train-10m.json",
+      "--validation-dataset",
+      "training_data/validation-10m.json",
+      "--output-directory",
+      "training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/experiment-adjusted-high-confidence-20260610T131001.986086Z"
+    ],
+    "training_command_text": "python3 run_bot.py train --non-interactive --population-size 40 --generations 40 --games-per-genome 20 --mutation-rate 0.10 --elite-ratio 0.10 --tournament-size 4 --inject-ratio 0.15 --variance-penalty 0.15 --workers 8 --seed 20260610 --watchdog-patience 12 --watchdog-min-generations 10 --watchdog-min-delta 0.0 --watchdog-average-recovery 0.0 --training-dataset training_data/train-10m.json --validation-dataset training_data/validation-10m.json --output-directory training_runs/experiment-adjusted-medium-confidence-20260610T124846.279987Z/experiment-adjusted-high-confidence-20260610T131001.986086Z",
+    "applied_weight_changes": [
+      {
+        "phase": "endgame",
+        "phase_index": 2,
+        "feature_index": 14,
+        "feature_number": 15,
+        "feature_name": "f15_diagonal_cross_points",
+        "decision": "increase",
+        "old_weight": 86.2634871790468,
+        "suggested_delta": 2.0,
+        "new_weight": 88.2634871790468,
+        "confidence": "high"
+      },
+      {
+        "phase": "opening",
+        "phase_index": 0,
+        "feature_index": 12,
+        "feature_number": 13,
+        "feature_name": "f13_vertical_match_interfaces",
+        "decision": "increase",
+        "old_weight": 63.96575632236892,
+        "suggested_delta": 2.0,
+        "new_weight": 65.96575632236892,
+        "confidence": "high"
+      },
+      {
+        "phase": "opening",
+        "phase_index": 0,
+        "feature_index": 9,
+        "feature_number": 10,
+        "feature_name": "f10_number_density_8",
+        "decision": "decrease",
+        "old_weight": -80.17172546934708,
+        "suggested_delta": -2.0,
+        "new_weight": -82.17172546934708,
+        "confidence": "high"
+      },
+      {
+        "phase": "midgame",
+        "phase_index": 1,
+        "feature_index": 14,
+        "feature_number": 15,
+        "feature_name": "f15_diagonal_cross_points",
+        "decision": "increase",
+        "old_weight": 72.55230269781104,
+        "suggested_delta": 2.0,
+        "new_weight": 74.55230269781104,
+        "confidence": "high"
+      },
+      {
+        "phase": "endgame",
+        "phase_index": 2,
+        "feature_index": 13,
+        "feature_number": 14,
+        "feature_name": "f14_empty_slots_count",
+        "decision": "decrease",
+        "old_weight": -85.38943646813448,
+        "suggested_delta": -2.0,
+        "new_weight": -87.38943646813448,
+        "confidence": "high"
+      },
+      {
+        "phase": "midgame",
+        "phase_index": 1,
+        "feature_index": 2,
+        "feature_number": 3,
+        "feature_name": "f3_potential_diagonal_pairs",
+        "decision": "increase",
+        "old_weight": -50.74696213612177,
+        "suggested_delta": 2.0,
+        "new_weight": -48.74696213612177,
+        "confidence": "high"
+      },
+      {
+        "phase": "opening",
+        "phase_index": 0,
+        "feature_index": 2,
+        "feature_number": 3,
+        "feature_name": "f3_potential_diagonal_pairs",
+        "decision": "increase",
+        "old_weight": 60.659259538725394,
+        "suggested_delta": 2.0,
+        "new_weight": 62.659259538725394,
+        "confidence": "high"
+      },
+      {
+        "phase": "midgame",
+        "phase_index": 1,
+        "feature_index": 3,
+        "feature_number": 4,
+        "feature_name": "f4_column_bumpiness",
+        "decision": "decrease",
+        "old_weight": -75.59912397305618,
+        "suggested_delta": -2.0,
+        "new_weight": -77.59912397305618,
+        "confidence": "high"
+      },
+      {
+        "phase": "endgame",
+        "phase_index": 2,
+        "feature_index": 15,
+        "feature_number": 16,
+        "feature_name": "f16_open_single_windows",
+        "decision": "decrease",
+        "old_weight": 11.59878128587249,
+        "suggested_delta": -2.0,
+        "new_weight": 9.59878128587249,
+        "confidence": "high"
+      }
+    ],
+    "optional_mask_changes": [
+      {
+        "phase": "endgame",
+        "phase_index": 2,
+        "feature_index": 18,
+        "feature_number": 19,
+        "feature_name": "f19_multi_line_completion_cells",
+        "decision": "prefer_disabled",
+        "confidence": "medium"
+      }
+    ],
+    "weights_by_phase": {
+      "opening": [
+        {
+          "feature_index": 0,
+          "feature_number": 1,
+          "feature_name": "f1_actual_score",
+          "mask": 1,
+          "weight": 100.0
+        },
+        {
+          "feature_index": 1,
+          "feature_number": 2,
+          "feature_name": "f2_potential_horizontal_pairs",
+          "mask": 0,
+          "weight": 11.904356176533334
+        },
+        {
+          "feature_index": 2,
+          "feature_number": 3,
+          "feature_name": "f3_potential_diagonal_pairs",
+          "mask": 1,
+          "weight": 62.659259538725394
+        },
+        {
+          "feature_index": 3,
+          "feature_number": 4,
+          "feature_name": "f4_column_bumpiness",
+          "mask": 0,
+          "weight": 58.36318475866709
+        },
+        {
+          "feature_index": 4,
+          "feature_number": 5,
+          "feature_name": "f5_center_bias",
+          "mask": 1,
+          "weight": -98.0
+        },
+        {
+          "feature_index": 5,
+          "feature_number": 6,
+          "feature_name": "f6_isolated_slots",
+          "mask": 1,
+          "weight": 91.85308667205925
+        },
+        {
+          "feature_index": 6,
+          "feature_number": 7,
+          "feature_name": "f7_dead_ends",
+          "mask": 1,
+          "weight": -100.0
+        },
+        {
+          "feature_index": 7,
+          "feature_number": 8,
+          "feature_name": "f8_max_height",
+          "mask": 1,
+          "weight": 64.91587282497919
+        },
+        {
+          "feature_index": 8,
+          "feature_number": 9,
+          "feature_name": "f9_number_density_7",
+          "mask": 0,
+          "weight": -15.801616710318445
+        },
+        {
+          "feature_index": 9,
+          "feature_number": 10,
+          "feature_name": "f10_number_density_8",
+          "mask": 1,
+          "weight": -82.17172546934708
+        },
+        {
+          "feature_index": 10,
+          "feature_number": 11,
+          "feature_name": "f11_number_density_9",
+          "mask": 1,
+          "weight": -4.729453343837671
+        },
+        {
+          "feature_index": 11,
+          "feature_number": 12,
+          "feature_name": "f12_number_density_10",
+          "mask": 0,
+          "weight": -14.599350572749394
+        },
+        {
+          "feature_index": 12,
+          "feature_number": 13,
+          "feature_name": "f13_vertical_match_interfaces",
+          "mask": 0,
+          "weight": 65.96575632236892
+        },
+        {
+          "feature_index": 13,
+          "feature_number": 14,
+          "feature_name": "f14_empty_slots_count",
+          "mask": 0,
+          "weight": -43.691549701869725
+        },
+        {
+          "feature_index": 14,
+          "feature_number": 15,
+          "feature_name": "f15_diagonal_cross_points",
+          "mask": 1,
+          "weight": 36.570008419737796
+        },
+        {
+          "feature_index": 15,
+          "feature_number": 16,
+          "feature_name": "f16_open_single_windows",
+          "mask": 0,
+          "weight": -22.30414209746984
+        },
+        {
+          "feature_index": 16,
+          "feature_number": 17,
+          "feature_name": "f17_open_pair_windows",
+          "mask": 0,
+          "weight": -14.90089570730923
+        },
+        {
+          "feature_index": 17,
+          "feature_number": 18,
+          "feature_name": "f18_blocked_windows",
+          "mask": 0,
+          "weight": 4.934318925786961
+        },
+        {
+          "feature_index": 18,
+          "feature_number": 19,
+          "feature_name": "f19_multi_line_completion_cells",
+          "mask": 0,
+          "weight": 26.067808020899044
+        }
+      ],
+      "midgame": [
+        {
+          "feature_index": 0,
+          "feature_number": 1,
+          "feature_name": "f1_actual_score",
+          "mask": 1,
+          "weight": 63.99549917197969
+        },
+        {
+          "feature_index": 1,
+          "feature_number": 2,
+          "feature_name": "f2_potential_horizontal_pairs",
+          "mask": 1,
+          "weight": 28.52705602310059
+        },
+        {
+          "feature_index": 2,
+          "feature_number": 3,
+          "feature_name": "f3_potential_diagonal_pairs",
+          "mask": 1,
+          "weight": -48.74696213612177
+        },
+        {
+          "feature_index": 3,
+          "feature_number": 4,
+          "feature_name": "f4_column_bumpiness",
+          "mask": 0,
+          "weight": -77.59912397305618
+        },
+        {
+          "feature_index": 4,
+          "feature_number": 5,
+          "feature_name": "f5_center_bias",
+          "mask": 0,
+          "weight": 66.02700560158732
+        },
+        {
+          "feature_index": 5,
+          "feature_number": 6,
+          "feature_name": "f6_isolated_slots",
+          "mask": 1,
+          "weight": 28.9241238582879
+        },
+        {
+          "feature_index": 6,
+          "feature_number": 7,
+          "feature_name": "f7_dead_ends",
+          "mask": 0,
+          "weight": 85.36725133862409
+        },
+        {
+          "feature_index": 7,
+          "feature_number": 8,
+          "feature_name": "f8_max_height",
+          "mask": 1,
+          "weight": 16.060586308264927
+        },
+        {
+          "feature_index": 8,
+          "feature_number": 9,
+          "feature_name": "f9_number_density_7",
+          "mask": 0,
+          "weight": -81.99400794182196
+        },
+        {
+          "feature_index": 9,
+          "feature_number": 10,
+          "feature_name": "f10_number_density_8",
+          "mask": 0,
+          "weight": 35.059410368379496
+        },
+        {
+          "feature_index": 10,
+          "feature_number": 11,
+          "feature_name": "f11_number_density_9",
+          "mask": 1,
+          "weight": 55.42765654275735
+        },
+        {
+          "feature_index": 11,
+          "feature_number": 12,
+          "feature_name": "f12_number_density_10",
+          "mask": 1,
+          "weight": -67.17009119470585
+        },
+        {
+          "feature_index": 12,
+          "feature_number": 13,
+          "feature_name": "f13_vertical_match_interfaces",
+          "mask": 0,
+          "weight": 19.55348536296644
+        },
+        {
+          "feature_index": 13,
+          "feature_number": 14,
+          "feature_name": "f14_empty_slots_count",
+          "mask": 0,
+          "weight": -34.950364241522216
+        },
+        {
+          "feature_index": 14,
+          "feature_number": 15,
+          "feature_name": "f15_diagonal_cross_points",
+          "mask": 1,
+          "weight": 74.55230269781104
+        },
+        {
+          "feature_index": 15,
+          "feature_number": 16,
+          "feature_name": "f16_open_single_windows",
+          "mask": 1,
+          "weight": 0.21918939786506497
+        },
+        {
+          "feature_index": 16,
+          "feature_number": 17,
+          "feature_name": "f17_open_pair_windows",
+          "mask": 0,
+          "weight": -17.417400119686228
+        },
+        {
+          "feature_index": 17,
+          "feature_number": 18,
+          "feature_name": "f18_blocked_windows",
+          "mask": 1,
+          "weight": -5.466410895247828
+        },
+        {
+          "feature_index": 18,
+          "feature_number": 19,
+          "feature_name": "f19_multi_line_completion_cells",
+          "mask": 1,
+          "weight": 15.060705677738355
+        }
+      ],
+      "endgame": [
+        {
+          "feature_index": 0,
+          "feature_number": 1,
+          "feature_name": "f1_actual_score",
+          "mask": 1,
+          "weight": 51.308075141122586
+        },
+        {
+          "feature_index": 1,
+          "feature_number": 2,
+          "feature_name": "f2_potential_horizontal_pairs",
+          "mask": 0,
+          "weight": -48.14412321945558
+        },
+        {
+          "feature_index": 2,
+          "feature_number": 3,
+          "feature_name": "f3_potential_diagonal_pairs",
+          "mask": 1,
+          "weight": -38.63001171231482
+        },
+        {
+          "feature_index": 3,
+          "feature_number": 4,
+          "feature_name": "f4_column_bumpiness",
+          "mask": 0,
+          "weight": -57.829852191380944
+        },
+        {
+          "feature_index": 4,
+          "feature_number": 5,
+          "feature_name": "f5_center_bias",
+          "mask": 1,
+          "weight": 25.45653392132243
+        },
+        {
+          "feature_index": 5,
+          "feature_number": 6,
+          "feature_name": "f6_isolated_slots",
+          "mask": 0,
+          "weight": 97.71215759512855
+        },
+        {
+          "feature_index": 6,
+          "feature_number": 7,
+          "feature_name": "f7_dead_ends",
+          "mask": 0,
+          "weight": -45.39052663906511
+        },
+        {
+          "feature_index": 7,
+          "feature_number": 8,
+          "feature_name": "f8_max_height",
+          "mask": 1,
+          "weight": -17.73843284283961
+        },
+        {
+          "feature_index": 8,
+          "feature_number": 9,
+          "feature_name": "f9_number_density_7",
+          "mask": 1,
+          "weight": 98.0
+        },
+        {
+          "feature_index": 9,
+          "feature_number": 10,
+          "feature_name": "f10_number_density_8",
+          "mask": 0,
+          "weight": -90.17263896353825
+        },
+        {
+          "feature_index": 10,
+          "feature_number": 11,
+          "feature_name": "f11_number_density_9",
+          "mask": 0,
+          "weight": 39.16433781284021
+        },
+        {
+          "feature_index": 11,
+          "feature_number": 12,
+          "feature_name": "f12_number_density_10",
+          "mask": 1,
+          "weight": 34.05949969368163
+        },
+        {
+          "feature_index": 12,
+          "feature_number": 13,
+          "feature_name": "f13_vertical_match_interfaces",
+          "mask": 0,
+          "weight": 48.15618740320825
+        },
+        {
+          "feature_index": 13,
+          "feature_number": 14,
+          "feature_name": "f14_empty_slots_count",
+          "mask": 0,
+          "weight": -87.38943646813448
+        },
+        {
+          "feature_index": 14,
+          "feature_number": 15,
+          "feature_name": "f15_diagonal_cross_points",
+          "mask": 1,
+          "weight": 88.2634871790468
+        },
+        {
+          "feature_index": 15,
+          "feature_number": 16,
+          "feature_name": "f16_open_single_windows",
+          "mask": 0,
+          "weight": 9.59878128587249
+        },
+        {
+          "feature_index": 16,
+          "feature_number": 17,
+          "feature_name": "f17_open_pair_windows",
+          "mask": 1,
+          "weight": 8.31234490887775
+        },
+        {
+          "feature_index": 17,
+          "feature_number": 18,
+          "feature_name": "f18_blocked_windows",
+          "mask": 0,
+          "weight": 3.0143910155638194
+        },
+        {
+          "feature_index": 18,
+          "feature_number": 19,
+          "feature_name": "f19_multi_line_completion_cells",
+          "mask": 1,
+          "weight": -5.260015274249349
+        }
+      ]
+    }
+  }
+}

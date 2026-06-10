@@ -69,7 +69,7 @@ def _parse_time(value: object) -> str:
 def _candidate_paths(summary: Optional[str], runs_dir: Path) -> List[Path]:
     if summary:
         return [Path(summary)]
-    return sorted(runs_dir.glob("train-*.json"))
+    return sorted(runs_dir.rglob("train-*.json"))
 
 
 def _load_runs(paths: Sequence[Path]) -> List[RunRecord]:
@@ -595,47 +595,69 @@ def _format_weights_by_phase(genes: object) -> Dict[str, List[Dict[str, object]]
     return formatted
 
 
-def _training_command(output_directory: Path) -> List[str]:
-    return [
+def _training_command(output_directory: Path,
+                      reference_run: Optional[RunRecord]) -> List[str]:
+    config = (
+        reference_run.payload.get("config")
+        if reference_run and isinstance(reference_run.payload.get("config"), dict)
+        else {}
+    )
+    training_dataset = (
+        reference_run.payload.get("training_dataset")
+        if reference_run and isinstance(reference_run.payload.get("training_dataset"), dict)
+        else {}
+    )
+    validation_dataset = (
+        reference_run.payload.get("validation_dataset")
+        if reference_run and isinstance(reference_run.payload.get("validation_dataset"), dict)
+        else {}
+    )
+    command = [
         "python3",
         "run_bot.py",
         "train",
         "--non-interactive",
         "--population-size",
-        "40",
+        str(config.get("population_size", 40)),
         "--generations",
-        "40",
+        str(config.get("generations", 40)),
         "--games-per-genome",
-        "20",
+        str(config.get("games_per_genome", 20)),
         "--mutation-rate",
-        "0.10",
+        f"{float(config.get('mutation_rate', 0.10)):.2f}",
         "--elite-ratio",
-        "0.10",
+        f"{float(config.get('elite_ratio', 0.10)):.2f}",
         "--tournament-size",
-        "4",
+        str(config.get("tournament_size", 4)),
         "--inject-ratio",
-        "0.15",
+        f"{float(config.get('inject_ratio', 0.15)):.2f}",
         "--variance-penalty",
-        "0.15",
+        f"{float(config.get('variance_penalty', 0.15)):.2f}",
         "--workers",
-        "8",
+        str(config.get("worker_count", 8)),
         "--seed",
-        "20260610",
+        str(config.get("reproducibility_seed", 20260610)),
         "--watchdog-patience",
-        "12",
+        str(config.get("watchdog_patience", 12)),
         "--watchdog-min-generations",
-        "10",
+        str(config.get("watchdog_min_generations", 10)),
         "--watchdog-min-delta",
-        "0.0",
+        str(config.get("watchdog_min_delta", 0.0)),
         "--watchdog-average-recovery",
-        "0.0",
-        "--training-dataset",
-        "training_data/train-10m.json",
-        "--validation-dataset",
-        "training_data/validation-10m.json",
-        "--output-directory",
-        str(output_directory),
+        str(config.get("watchdog_average_recovery", 0.0)),
     ]
+    training_dataset_path = config.get("training_dataset_path") or training_dataset.get("path")
+    if training_dataset_path:
+        command.extend(["--training-dataset", str(training_dataset_path)])
+    validation_dataset_path = (
+        config.get("validation_dataset_path") or validation_dataset.get("path")
+    )
+    if validation_dataset_path:
+        command.extend(["--validation-dataset", str(validation_dataset_path)])
+    if config.get("watchdog_enabled") is False:
+        command.append("--disable-watchdog")
+    command.extend(["--output-directory", str(output_directory)])
+    return command
 
 
 def _build_candidate_experiment(
@@ -643,12 +665,13 @@ def _build_candidate_experiment(
     output_directory: Path,
     analysis_path: Path,
     timestamp: str,
+    reference_run: Optional[RunRecord],
 ) -> Dict[str, object]:
     """Create a ready-to-run candidate active model from high-confidence deltas."""
     active_payload = _load_active_payload(output_directory)
     experiment_directory = output_directory / f"experiment-adjusted-high-confidence-{timestamp}"
     candidate_path = experiment_directory / "active_chromosome.json"
-    command = _training_command(experiment_directory)
+    command = _training_command(experiment_directory, reference_run)
     mask_changes: List[Dict[str, object]] = []
     for recommendation in report.get("mask_recommendations", []):
         if recommendation.get("confidence") != "medium":
@@ -831,6 +854,7 @@ def build_report(
         output_directory,
         analysis_path,
         timestamp,
+        _latest_run(runs),
     )
     output_directory.mkdir(parents=True, exist_ok=True)
     analysis_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -921,7 +945,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     runs_dir = Path(args.runs_dir)
     runs = _load_runs(_candidate_paths(args.summary, runs_dir))
     latest_training_analysis = _ensure_latest_training_analysis(runs)
-    report = build_report(runs, runs_dir, latest_training_analysis=latest_training_analysis)
+    latest_run = _latest_run(runs)
+    output_directory = latest_run.path.parent if latest_run else runs_dir
+    report = build_report(runs, output_directory, latest_training_analysis=latest_training_analysis)
     if args.json:
         print(json.dumps(report, indent=2))
     else:

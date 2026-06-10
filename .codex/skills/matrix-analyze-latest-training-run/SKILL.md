@@ -9,6 +9,10 @@ Produce an evidence-based report for the newest persisted GA run. Persist only t
 handoff artifact; keep training summaries and active weights read-only unless the user
 explicitly asks to promote weights or start another run.
 
+By default the analyzer searches recursively under `training_runs/`, so experiment
+subdirectories such as `training_runs/experiment-*/train-*.json` are eligible and are
+ordered by `updated_at`.
+
 ## Workflow
 
 1. Run the bundled analyzer from the repository root:
@@ -69,12 +73,14 @@ explicitly asks to promote weights or start another run.
 
 ## Selection Rules
 
-- Select the newest parseable `training_runs/train-*.json` by `updated_at`, falling back
-  to filename order only when timestamps are missing or invalid.
+- Select the newest parseable `train-*.json` recursively under `training_runs/` by
+  `updated_at`, falling back to filename order only when timestamps are missing or invalid.
 - Include `completed`, `interrupted`, `failed`, and `running` summaries.
 - Handle older summaries without `plateau_diagnostics`; state that metrics are
   unavailable instead of treating them as zero.
-- Read `training_runs/active_chromosome.json` only for status context.
+- Read `training_runs/active_chromosome.json` only for status context. When the summary is
+  inside an experiment subdirectory and the default active-model path is used, prefer the
+  sibling `active_chromosome.json` beside that summary directory for local context.
 
 ## Safety Rules
 
