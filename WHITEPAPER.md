@@ -414,14 +414,24 @@ telemetry when available, falls back to generation-best chromosome weight and ma
 movement for older logs, correlates those directional changes with training and
 validation outcomes, and persists a read-only recommendation under
 `training_runs/weight-adjustment-recommendation-<timestamp>.json`. Recommendations are
-directional and should be validated with controlled follow-up runs.
+directional and should be validated with controlled follow-up runs. When an active
+chromosome is available, the report also creates a ready-to-run candidate active model
+under `training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
+and prints the full training command for that isolated output directory. High-confidence
+weight deltas are applied to the candidate; mask changes remain advisory until a
+separate controlled experiment validates them.
 
 Recommender đọc các summary `training_runs/train-*.json`, phân tích telemetry toàn
 population khi có, fallback về biến động weight và mask của best chromosome theo
 generation với log cũ, đối chiếu hướng thay đổi với kết quả training và validation, rồi
 lưu recommendation read-only theo mẫu
 `training_runs/weight-adjustment-recommendation-<timestamp>.json`. Khuyến nghị là định
-hướng và cần được kiểm chứng bằng run có kiểm soát.
+hướng và cần được kiểm chứng bằng run có kiểm soát. Khi có active chromosome, report
+cũng tạo candidate active model có thể chạy ngay tại
+`training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
+và in đầy đủ command training cho output directory tách biệt đó. Candidate chỉ áp dụng
+delta trọng số confidence cao; thay đổi mask vẫn là khuyến nghị tham khảo cho experiment
+riêng.
 
 ### Promote active weights / Chọn weight đang hoạt động
 
@@ -659,6 +669,7 @@ Các script chẩn đoán thủ công không assert hành vi ứng dụng nằm 
 | `training_runs/train-*.json` | Incremental training summaries / Summary training tăng dần |
 | `training_runs/analysis-train-*.json` | Persisted analyzer handoffs / Handoff analyzer đã lưu |
 | `training_runs/weight-adjustment-recommendation-*.json` | Persisted weight-adjustment recommendations / Khuyến nghị chỉnh trọng số đã lưu |
+| `training_runs/experiment-adjusted-high-confidence-*/active_chromosome.json` | Ready-to-run candidate active model from weight recommender / Candidate active model chạy thử từ recommender |
 | `training_runs/active_chromosome.json` | Promoted local weights / Weight cục bộ đang dùng |
 | `training_runs/*.png` | Optional charts / Biểu đồ tùy chọn |
 | `training_runs/known-future-*.json` | Optional comparison reports / Report so sánh tùy chọn |

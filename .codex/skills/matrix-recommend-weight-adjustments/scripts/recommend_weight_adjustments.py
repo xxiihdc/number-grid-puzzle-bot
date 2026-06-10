@@ -9,11 +9,33 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import shlex
 import statistics
 from typing import DefaultDict, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
 PHASE_NAMES = ("opening", "midgame", "endgame")
+FEATURE_NAMES = (
+    "f1_actual_score",
+    "f2_potential_horizontal_pairs",
+    "f3_potential_diagonal_pairs",
+    "f4_column_bumpiness",
+    "f5_center_bias",
+    "f6_isolated_slots",
+    "f7_dead_ends",
+    "f8_max_height",
+    "f9_number_density_7",
+    "f10_number_density_8",
+    "f11_number_density_9",
+    "f12_number_density_10",
+    "f13_vertical_match_interfaces",
+    "f14_empty_slots_count",
+    "f15_diagonal_cross_points",
+    "f16_open_single_windows",
+    "f17_open_pair_windows",
+    "f18_blocked_windows",
+    "f19_multi_line_completion_cells",
+)
 REPORT_TYPE = "matrix_weight_adjustment_recommendation"
 EVIDENCE_SCOPE = "generation_best_chromosomes_only"
 POPULATION_EVIDENCE_SCOPE = "population_telemetry_and_generation_best_chromosomes"
@@ -143,6 +165,10 @@ def _dataset_key(reference: object) -> Optional[str]:
 
 def _phase_name(index: int) -> str:
     return PHASE_NAMES[index] if 0 <= index < len(PHASE_NAMES) else f"phase_{index}"
+
+
+def _feature_name(index: int) -> str:
+    return FEATURE_NAMES[index] if 0 <= index < len(FEATURE_NAMES) else f"feature_{index}"
 
 
 def _mean(values: Sequence[float]) -> Optional[float]:
@@ -456,6 +482,199 @@ def _build_mask_recommendations(runs: Sequence[RunRecord]) -> List[Dict[str, obj
     )
 
 
+def _clamp_weight(value: float) -> float:
+    return max(-100.0, min(100.0, value))
+
+
+def _load_active_payload(output_directory: Path) -> Optional[Dict[str, object]]:
+    active_path = output_directory / "active_chromosome.json"
+    payload = _load_json(active_path)
+    if not isinstance(payload, dict):
+        return None
+    chromosome = payload.get("chromosome")
+    if not isinstance(chromosome, dict) or not isinstance(chromosome.get("genes"), list):
+        return None
+    return payload
+
+
+def _clone_json_payload(payload: Dict[str, object]) -> Dict[str, object]:
+    return json.loads(json.dumps(payload))
+
+
+def _format_weights_by_phase(genes: object) -> Dict[str, List[Dict[str, object]]]:
+    if not isinstance(genes, list):
+        return {}
+    formatted: Dict[str, List[Dict[str, object]]] = {}
+    for phase_index, phase_genes in enumerate(genes):
+        if not isinstance(phase_genes, list):
+            continue
+        rows: List[Dict[str, object]] = []
+        for feature_index, gene in enumerate(phase_genes):
+            if not isinstance(gene, dict):
+                continue
+            rows.append(
+                {
+                    "feature_index": feature_index,
+                    "feature_number": feature_index + 1,
+                    "feature_name": _feature_name(feature_index),
+                    "mask": gene.get("mask"),
+                    "weight": gene.get("weight"),
+                }
+            )
+        formatted[_phase_name(phase_index)] = rows
+    return formatted
+
+
+def _training_command(output_directory: Path) -> List[str]:
+    return [
+        "python3",
+        "run_bot.py",
+        "train",
+        "--non-interactive",
+        "--population-size",
+        "40",
+        "--generations",
+        "40",
+        "--games-per-genome",
+        "20",
+        "--mutation-rate",
+        "0.10",
+        "--elite-ratio",
+        "0.10",
+        "--tournament-size",
+        "4",
+        "--inject-ratio",
+        "0.15",
+        "--variance-penalty",
+        "0.15",
+        "--workers",
+        "8",
+        "--seed",
+        "20260610",
+        "--watchdog-patience",
+        "12",
+        "--watchdog-min-generations",
+        "10",
+        "--watchdog-min-delta",
+        "0.0",
+        "--watchdog-average-recovery",
+        "0.0",
+        "--training-dataset",
+        "training_data/train-10m.json",
+        "--validation-dataset",
+        "training_data/validation-10m.json",
+        "--output-directory",
+        str(output_directory),
+    ]
+
+
+def _build_candidate_experiment(
+    report: Dict[str, object],
+    output_directory: Path,
+    analysis_path: Path,
+    timestamp: str,
+) -> Dict[str, object]:
+    """Create a ready-to-run candidate active model from high-confidence deltas."""
+    active_payload = _load_active_payload(output_directory)
+    experiment_directory = output_directory / f"experiment-adjusted-high-confidence-{timestamp}"
+    candidate_path = experiment_directory / "active_chromosome.json"
+    command = _training_command(experiment_directory)
+    mask_changes: List[Dict[str, object]] = []
+    for recommendation in report.get("mask_recommendations", []):
+        if recommendation.get("confidence") != "medium":
+            continue
+        feature_index = int(recommendation["feature_index"])
+        mask_changes.append(
+            {
+                "phase": recommendation["phase"],
+                "phase_index": recommendation["phase_index"],
+                "feature_index": feature_index,
+                "feature_number": feature_index + 1,
+                "feature_name": _feature_name(feature_index),
+                "decision": recommendation["decision"],
+                "confidence": recommendation["confidence"],
+            }
+        )
+
+    if active_payload is None:
+        return {
+            "status": "unavailable",
+            "reason": f"No active chromosome found at {output_directory / 'active_chromosome.json'}.",
+            "policy": {
+                "applied_weight_confidences": ["high"],
+                "applied_mask_confidences": [],
+                "mask_changes_are_advisory": True,
+            },
+            "candidate_active_model_path": str(candidate_path),
+            "training_command": command,
+            "training_command_text": shlex.join(command),
+            "optional_mask_changes": mask_changes,
+        }
+
+    candidate_payload = _clone_json_payload(active_payload)
+    chromosome = candidate_payload["chromosome"]
+    genes = chromosome["genes"]
+    applied_weight_changes: List[Dict[str, object]] = []
+    for recommendation in report.get("phase_recommendations", []):
+        if recommendation.get("confidence") != "high":
+            continue
+        suggested_delta = float(recommendation.get("suggested_delta", 0.0))
+        if suggested_delta == 0.0:
+            continue
+        phase_index = int(recommendation["phase_index"])
+        feature_index = int(recommendation["feature_index"])
+        try:
+            gene = genes[phase_index][feature_index]
+            old_weight = float(gene.get("weight", 0.0))
+        except (IndexError, TypeError, ValueError, AttributeError):
+            continue
+        new_weight = _clamp_weight(old_weight + suggested_delta)
+        gene["weight"] = new_weight
+        applied_weight_changes.append(
+            {
+                "phase": recommendation["phase"],
+                "phase_index": phase_index,
+                "feature_index": feature_index,
+                "feature_number": feature_index + 1,
+                "feature_name": _feature_name(feature_index),
+                "decision": recommendation["decision"],
+                "old_weight": old_weight,
+                "suggested_delta": suggested_delta,
+                "new_weight": new_weight,
+                "confidence": recommendation["confidence"],
+            }
+        )
+
+    candidate_payload.update(
+        {
+            "schema_version": 1,
+            "synced_at": datetime.now(timezone.utc).isoformat(),
+            "source_summary": str(analysis_path),
+            "source_run_id": "weight-adjusted-high-confidence-candidate",
+        }
+    )
+    experiment_directory.mkdir(parents=True, exist_ok=True)
+    candidate_path.write_text(json.dumps(candidate_payload, indent=2) + "\n", encoding="utf-8")
+
+    return {
+        "status": "ready",
+        "policy": {
+            "applied_weight_confidences": ["high"],
+            "applied_mask_confidences": [],
+            "mask_changes_are_advisory": True,
+            "weight_bounds": [-100.0, 100.0],
+        },
+        "baseline_active_model_path": str(output_directory / "active_chromosome.json"),
+        "candidate_active_model_path": str(candidate_path),
+        "output_directory": str(experiment_directory),
+        "training_command": command,
+        "training_command_text": shlex.join(command),
+        "applied_weight_changes": applied_weight_changes,
+        "optional_mask_changes": mask_changes,
+        "weights_by_phase": _format_weights_by_phase(genes),
+    }
+
+
 def build_report(runs: Sequence[RunRecord], output_directory: Path) -> Dict[str, object]:
     created_at = datetime.now(timezone.utc).isoformat()
     has_population_telemetry = _has_population_telemetry(runs)
@@ -482,6 +701,8 @@ def build_report(runs: Sequence[RunRecord], output_directory: Path) -> Dict[str,
         if phase_recommendations
         else "collect_more_validated_training_evidence"
     )
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+    analysis_path = output_directory / f"weight-adjustment-recommendation-{timestamp}.json"
     report: Dict[str, object] = {
         "schema_version": 1,
         "report_type": REPORT_TYPE,
@@ -526,10 +747,14 @@ def build_report(runs: Sequence[RunRecord], output_directory: Path) -> Dict[str,
             ),
         },
     }
-    output_directory.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    analysis_path = output_directory / f"weight-adjustment-recommendation-{timestamp}.json"
     report["analysis_path"] = str(analysis_path)
+    report["candidate_experiment"] = _build_candidate_experiment(
+        report,
+        output_directory,
+        analysis_path,
+        timestamp,
+    )
+    output_directory.mkdir(parents=True, exist_ok=True)
     analysis_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report
 
@@ -543,12 +768,44 @@ def _render_markdown(report: Dict[str, object]) -> str:
         f"- Confidence: `{report['global_assessment']['confidence']}`",
         f"- Analysis path: `{report['analysis_path']}`",
         "",
-        "## Top Phase Recommendations",
+        "## Ready-To-Run Candidate",
     ]
+    candidate = report.get("candidate_experiment", {})
+    if isinstance(candidate, dict) and candidate.get("status") == "ready":
+        lines.extend(
+            [
+                f"- Candidate active model: `{candidate['candidate_active_model_path']}`",
+                f"- Output directory: `{candidate['output_directory']}`",
+                "- Training command:",
+                "",
+                "```sh",
+                str(candidate["training_command_text"]),
+                "```",
+                "",
+                f"- Applied high-confidence weight changes: `{len(candidate['applied_weight_changes'])}`",
+                f"- Advisory mask changes not applied: `{len(candidate['optional_mask_changes'])}`",
+                "",
+            ]
+        )
+    elif isinstance(candidate, dict):
+        lines.extend(
+            [
+                f"- Candidate status: `{candidate.get('status', 'unknown')}`",
+                f"- Reason: {candidate.get('reason', 'No candidate details available.')}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+        "## Top Phase Recommendations",
+        ]
+    )
     for item in report["phase_recommendations"][:10]:
+        feature_index = int(item["feature_index"])
         lines.append(
             "- "
-            f"{item['phase']} feature `{item['feature_index']}`: "
+            f"{item['phase']} `{_feature_name(feature_index)}` "
+            f"(f{feature_index + 1}, index `{feature_index}`): "
             f"`{item['decision']}` by `{item['suggested_delta']}` "
             f"(confidence `{item['confidence']}`, signal `{item['signal']}`)"
         )

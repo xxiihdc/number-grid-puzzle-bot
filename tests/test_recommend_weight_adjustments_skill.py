@@ -98,6 +98,16 @@ def test_recommends_increase_from_improving_weight_delta():
         runs_dir = Path(temp_dir)
         _write_run(runs_dir / "train-a.json", "a", [1.0, 5.0, 8.0], [10.0, 15.0, 20.0], 21.0)
         _write_run(runs_dir / "train-b.json", "b", [1.0, 2.0, 3.0], [10.0, 11.0, 12.0], 12.0)
+        _write_run(runs_dir / "train-c.json", "c", [1.0, 4.0, 7.0], [10.0, 14.0, 19.0], 20.0)
+        active_payload = {
+            "schema_version": 1,
+            "source_summary": "training_runs/train-active.json",
+            "source_run_id": "active",
+            "best_fitness": 20.0,
+            "validation_fitness": 21.0,
+            "chromosome": _chromosome(10.0),
+        }
+        (runs_dir / "active_chromosome.json").write_text(json.dumps(active_payload), encoding="utf-8")
         runs = module._load_runs(sorted(runs_dir.glob("train-*.json")))
         report = module.build_report(runs, runs_dir)
 
@@ -110,6 +120,12 @@ def test_recommends_increase_from_improving_weight_delta():
         assert recommendation["decision"] == "increase"
         assert recommendation["suggested_delta"] > 0
         assert os.path.exists(report["analysis_path"])
+        candidate = report["candidate_experiment"]
+        assert candidate["status"] == "ready"
+        assert os.path.exists(candidate["candidate_active_model_path"])
+        assert "--output-directory" in candidate["training_command"]
+        assert candidate["applied_weight_changes"]
+        assert candidate["weights_by_phase"]["opening"][0]["feature_name"] == "f1_actual_score"
 
 
 def test_missing_validation_is_reported_as_warning():
