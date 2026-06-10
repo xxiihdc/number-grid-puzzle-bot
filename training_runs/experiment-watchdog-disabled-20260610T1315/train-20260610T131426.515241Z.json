@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "run_id": "train-20260610T131426.515241Z",
+  "status": "failed",
+  "started_at": "2026-06-10T13:14:26.515182+00:00",
+  "updated_at": "2026-06-10T13:14:26.517256+00:00",
+  "completed_at": "2026-06-10T13:14:26.517253+00:00",
+  "stop_reason": "[Errno 1] Operation not permitted",
+  "config": {
+    "population_size": 40,
+    "generations": 40,
+    "games_per_genome": 20,
+    "mutation_rate": 0.1,
+    "elite_ratio": 0.1,
+    "tournament_size": 4,
+    "inject_ratio": 0.15,
+    "variance_penalty": 0.15,
+    "worker_count": 8,
+    "reproducibility_seed": 20260610,
+    "training_dataset_path": "training_data/train-10m.json",
+    "validation_dataset_path": "training_data/validation-10m.json",
+    "watchdog_enabled": false,
+    "watchdog_patience": 12,
+    "watchdog_min_delta": 0.0,
+    "watchdog_min_generations": 10,
+    "watchdog_average_recovery": 0.0,
+    "elite_count": 4,
+    "inject_count": 6
+  },
+  "training_dataset": {
+    "dataset_id": "train-10m",
+    "content_checksum": "sha256:ecc21009fb2eb5eb22084e628c193fc94814438aff0ff56a335b5903474f4b62"
+  },
+  "validation_dataset": {
+    "dataset_id": "validation-10m",
+    "content_checksum": "sha256:e56df4c2a5bd946b93f474856baf9949802fb5ac0f9b0df90bb46fe1d10ab313"
+  },
+  "overlap_report": {
+    "scenario_count": 0,
+    "scenario_ids": []
+  },
+  "generation_summaries": [],
+  "best_chromosome": null,
+  "best_fitness": null,
+  "validation_fitness": null
+}
