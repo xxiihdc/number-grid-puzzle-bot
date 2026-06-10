@@ -322,6 +322,19 @@ budget regardless of plateau evidence.
 Dùng `--disable-watchdog` khi thí nghiệm bắt buộc chạy đủ số vòng `--generations` dù
 log đã có tín hiệu plateau.
 
+### Run training agent skill / Skill agent chạy training
+
+For short prompts such as "run training" or "run trainning", Codex should use
+`.codex/skills/matrix-run-training/` to avoid broad repository exploration before
+launching the standard non-interactive training profile above. The skill verifies the
+standard CRN datasets, starts the run, monitors progress, and leaves weight promotion
+to a later explicit request.
+
+Với prompt ngắn như "run training" hoặc "run trainning", Codex nên dùng
+`.codex/skills/matrix-run-training/` để tránh đọc rộng toàn repo trước khi chạy cấu
+hình non-interactive chuẩn ở trên. Skill kiểm tra dataset CRN chuẩn, khởi động run,
+theo dõi tiến trình, và chỉ promote weight khi có yêu cầu rõ ràng sau đó.
+
 ### Replay a trained candidate / Đánh giá lại candidate đã train
 
 Replay against the recorded training subset / Replay trên tập training đã ghi nhận:

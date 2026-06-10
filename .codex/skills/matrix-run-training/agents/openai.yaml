@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Matrix Training"
+  short_description: "Start GA training with minimal preflight"
+  default_prompt: "Use $matrix-run-training to start the standard non-interactive GA training run quickly, monitor progress, and leave weight promotion for a later explicit request."
