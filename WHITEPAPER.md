@@ -422,7 +422,11 @@ chromosome is available, the report also creates a ready-to-run candidate active
 under `training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
 and prints the full training command for that isolated output directory.
 High-confidence weight deltas are applied to the candidate; mask changes remain
-advisory until a separate controlled experiment validates them.
+advisory until a separate controlled experiment validates them. The recommender also
+persists a canonical CLI knowledge artifact at `training_runs/best_known_training_profile.json`,
+selecting the strongest known training profile primarily by validation fitness so future
+recommendations can reuse the best-known hyperparameter profile instead of hardcoded
+command defaults.
 
 Recommender đọc các summary `training_runs/train-*.json`, phân tích telemetry toàn
 population khi có, fallback về biến động weight và mask của best chromosome theo
@@ -437,7 +441,10 @@ chromosome, report cũng tạo candidate active model có thể chạy ngay tạ
 `training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
 và in đầy đủ command training cho output directory tách biệt đó. Candidate chỉ áp dụng
 delta trọng số confidence cao; thay đổi mask vẫn là khuyến nghị tham khảo cho experiment
-riêng.
+riêng. Recommender cũng lưu artifact tri thức CLI chuẩn tại
+`training_runs/best_known_training_profile.json`, chọn profile training tốt nhất đã biết
+chủ yếu theo validation fitness để các lần khuyến nghị sau dùng lại hyperparameter
+profile tốt nhất thay vì quay về command hardcode.
 
 ### Promote active weights / Chọn weight đang hoạt động
 
@@ -675,6 +682,7 @@ Các script chẩn đoán thủ công không assert hành vi ứng dụng nằm 
 | `training_runs/train-*.json` | Incremental training summaries / Summary training tăng dần |
 | `training_runs/analysis-train-*.json` | Persisted analyzer handoffs / Handoff analyzer đã lưu |
 | `training_runs/weight-adjustment-recommendation-*.json` | Persisted weight-adjustment recommendations / Khuyến nghị chỉnh trọng số đã lưu |
+| `training_runs/best_known_training_profile.json` | Canonical best-known CLI training profile chosen from run evidence / Profile CLI training tốt nhất đã biết được chọn từ bằng chứng run |
 | `training_runs/experiment-adjusted-high-confidence-*/active_chromosome.json` | Ready-to-run candidate active model from weight recommender / Candidate active model chạy thử từ recommender |
 | `training_runs/active_chromosome.json` | Promoted local weights / Weight cục bộ đang dùng |
 | `training_runs/*.png` | Optional charts / Biểu đồ tùy chọn |

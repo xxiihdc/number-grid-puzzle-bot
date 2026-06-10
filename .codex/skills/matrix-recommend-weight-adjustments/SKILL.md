@@ -43,20 +43,31 @@ subdirectories such as `training_runs/experiment-*/train-*.json` are eligible.
    The ready-to-run candidate experiment is also created under the selected run's
    directory so follow-up runs continue from the local `active_chromosome.json`.
 
-4. Use the persisted report for the user-facing answer. Preserve the distinction between
+4. The recommender also persists a canonical best-known CLI profile artifact under:
+
+   ```text
+   training_runs/best_known_training_profile.json
+   ```
+
+   This artifact captures the strongest known training configuration from the analyzed
+   runs, keyed primarily by validation fitness, and is intended to preserve operating
+   knowledge alongside chromosome/weight artifacts.
+
+5. Use the persisted report for the user-facing answer. Preserve the distinction between
    measured facts, directional recommendations, and caveats.
 
-5. Summarize:
+6. Summarize:
    - number of runs analyzed
    - latest training analysis status and path
    - evidence scope
    - validation coverage and dataset comparability warnings
+   - best-known training profile artifact and source run
    - ready-to-run candidate active model path and training command when available
    - highest-confidence phase/feature recommendations
    - mask recommendations
    - recommended next action
 
-6. If the report says validation coverage is weak, recommend validation replay or a
+7. If the report says validation coverage is weak, recommend validation replay or a
    controlled experiment before making aggressive manual weight changes.
 
 ## Evidence Scope

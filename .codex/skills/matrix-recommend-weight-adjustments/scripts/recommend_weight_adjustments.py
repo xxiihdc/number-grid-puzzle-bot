@@ -41,6 +41,8 @@ FEATURE_NAMES = (
 REPORT_TYPE = "matrix_weight_adjustment_recommendation"
 EVIDENCE_SCOPE = "generation_best_chromosomes_only"
 POPULATION_EVIDENCE_SCOPE = "population_telemetry_and_generation_best_chromosomes"
+TRAINING_PROFILE_REPORT_TYPE = "matrix_best_known_training_profile"
+BEST_KNOWN_TRAINING_PROFILE_FILENAME = "best_known_training_profile.json"
 
 
 @dataclass(frozen=True)
@@ -221,6 +223,37 @@ def _run_quality(run: RunRecord) -> Optional[float]:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     return None
+
+
+def _run_training_fitness(run: RunRecord) -> Optional[float]:
+    value = run.payload.get("best_fitness")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def _config_from_run(run: Optional[RunRecord]) -> Dict[str, object]:
+    if run and isinstance(run.payload.get("config"), dict):
+        return dict(run.payload["config"])
+    return {}
+
+
+def _profile_sort_key(run: RunRecord) -> Tuple[int, float, float, str]:
+    validation = run.payload.get("validation_fitness")
+    training = run.payload.get("best_fitness")
+    has_validation = 1 if isinstance(validation, (int, float)) and not isinstance(validation, bool) else 0
+    return (
+        has_validation,
+        float(validation) if has_validation else float("-inf"),
+        float(training) if isinstance(training, (int, float)) and not isinstance(training, bool) else float("-inf"),
+        _parse_time(run.payload.get("updated_at")),
+    )
+
+
+def _select_best_profile_run(runs: Sequence[RunRecord]) -> Optional[RunRecord]:
+    if not runs:
+        return None
+    return max(runs, key=_profile_sort_key)
 
 
 def _dataset_key(reference: object) -> Optional[str]:
@@ -596,12 +629,9 @@ def _format_weights_by_phase(genes: object) -> Dict[str, List[Dict[str, object]]
 
 
 def _training_command(output_directory: Path,
-                      reference_run: Optional[RunRecord]) -> List[str]:
-    config = (
-        reference_run.payload.get("config")
-        if reference_run and isinstance(reference_run.payload.get("config"), dict)
-        else {}
-    )
+                      reference_run: Optional[RunRecord],
+                      config_override: Optional[Dict[str, object]] = None) -> List[str]:
+    config = dict(config_override or _config_from_run(reference_run))
     training_dataset = (
         reference_run.payload.get("training_dataset")
         if reference_run and isinstance(reference_run.payload.get("training_dataset"), dict)
@@ -660,18 +690,80 @@ def _training_command(output_directory: Path,
     return command
 
 
+def _training_command_template(reference_run: Optional[RunRecord],
+                               config_override: Optional[Dict[str, object]] = None) -> str:
+    return shlex.join(
+        _training_command(
+            Path("<output-directory>"),
+            reference_run,
+            config_override=config_override,
+        )
+    )
+
+
+def _build_best_known_training_profile(
+    runs: Sequence[RunRecord],
+    runs_root: Path,
+) -> Dict[str, object]:
+    selected = _select_best_profile_run(runs)
+    artifact_path = runs_root / BEST_KNOWN_TRAINING_PROFILE_FILENAME
+    if selected is None:
+        payload: Dict[str, object] = {
+            "schema_version": 1,
+            "artifact_type": TRAINING_PROFILE_REPORT_TYPE,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "status": "unavailable",
+            "reason": "No parseable run with training config was found.",
+            "path": str(artifact_path),
+        }
+        runs_root.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        return payload
+
+    config = _config_from_run(selected)
+    validation = selected.payload.get("validation_fitness")
+    training = selected.payload.get("best_fitness")
+    selection_basis = (
+        "highest_validation_fitness"
+        if isinstance(validation, (int, float)) and not isinstance(validation, bool)
+        else "highest_training_fitness_without_validation"
+    )
+    payload = {
+        "schema_version": 1,
+        "artifact_type": TRAINING_PROFILE_REPORT_TYPE,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "status": "ready",
+        "path": str(artifact_path),
+        "selection_basis": selection_basis,
+        "source_summary": str(selected.path),
+        "source_run_id": selected.payload.get("run_id"),
+        "best_fitness": training,
+        "validation_fitness": validation,
+        "config": config,
+        "recommended_command_template": _training_command_template(selected, config_override=config),
+    }
+    runs_root.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return payload
+
+
 def _build_candidate_experiment(
     report: Dict[str, object],
     output_directory: Path,
     analysis_path: Path,
     timestamp: str,
     reference_run: Optional[RunRecord],
+    profile_config: Optional[Dict[str, object]],
 ) -> Dict[str, object]:
     """Create a ready-to-run candidate active model from high-confidence deltas."""
     active_payload = _load_active_payload(output_directory)
     experiment_directory = output_directory / f"experiment-adjusted-high-confidence-{timestamp}"
     candidate_path = experiment_directory / "active_chromosome.json"
-    command = _training_command(experiment_directory, reference_run)
+    command = _training_command(
+        experiment_directory,
+        reference_run,
+        config_override=profile_config,
+    )
     mask_changes: List[Dict[str, object]] = []
     for recommendation in report.get("mask_recommendations", []):
         if recommendation.get("confidence") != "medium":
@@ -757,6 +849,7 @@ def _build_candidate_experiment(
             "mask_changes_are_advisory": True,
             "weight_bounds": [-100.0, 100.0],
         },
+        "training_profile_source_run_id": reference_run.payload.get("run_id") if reference_run else None,
         "baseline_active_model_path": str(output_directory / "active_chromosome.json"),
         "candidate_active_model_path": str(candidate_path),
         "output_directory": str(experiment_directory),
@@ -771,6 +864,7 @@ def _build_candidate_experiment(
 def build_report(
     runs: Sequence[RunRecord],
     output_directory: Path,
+    runs_root: Path,
     latest_training_analysis: Optional[Dict[str, object]] = None,
 ) -> Dict[str, object]:
     created_at = datetime.now(timezone.utc).isoformat()
@@ -797,6 +891,13 @@ def build_report(
         "run_adjusted_weight_experiment"
         if phase_recommendations
         else "collect_more_validated_training_evidence"
+    )
+    profile_run = _select_best_profile_run(runs)
+    best_known_training_profile = _build_best_known_training_profile(runs, runs_root)
+    profile_config = (
+        dict(best_known_training_profile.get("config", {}))
+        if isinstance(best_known_training_profile.get("config"), dict)
+        else _config_from_run(profile_run)
     )
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     analysis_path = output_directory / f"weight-adjustment-recommendation-{timestamp}.json"
@@ -833,16 +934,23 @@ def build_report(
         },
         "phase_recommendations": phase_recommendations,
         "mask_recommendations": mask_recommendations,
+        "best_known_training_profile": best_known_training_profile,
         "next_training_command_hints": {
-            "mutation_rate": 0.10,
-            "inject_ratio": 0.15,
-            "tournament_size": 4,
+            "population_size": profile_config.get("population_size"),
+            "generations": profile_config.get("generations"),
+            "games_per_genome": profile_config.get("games_per_genome"),
+            "mutation_rate": profile_config.get("mutation_rate"),
+            "elite_ratio": profile_config.get("elite_ratio"),
+            "tournament_size": profile_config.get("tournament_size"),
+            "inject_ratio": profile_config.get("inject_ratio"),
+            "watchdog_patience": profile_config.get("watchdog_patience"),
+            "watchdog_min_generations": profile_config.get("watchdog_min_generations"),
         },
         "recommended_next_action": {
             "action": action,
             "requires_explicit_user_request": True,
             "rationale": (
-                "Use the highest-confidence directional weight recommendations in a controlled experiment."
+                "Use the best-known training profile together with the highest-confidence directional weight recommendations in a controlled experiment."
                 if phase_recommendations
                 else "Current logs do not contain enough weight movement evidence."
             ),
@@ -854,7 +962,8 @@ def build_report(
         output_directory,
         analysis_path,
         timestamp,
-        _latest_run(runs),
+        profile_run or _latest_run(runs),
+        profile_config,
     )
     output_directory.mkdir(parents=True, exist_ok=True)
     analysis_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -909,6 +1018,18 @@ def _render_markdown(report: Dict[str, object]) -> str:
                 "",
             ]
         )
+    profile = report.get("best_known_training_profile", {})
+    if isinstance(profile, dict):
+        lines.extend(["## Best Known Training Profile"])
+        lines.append(f"- Status: `{profile.get('status', 'unknown')}`")
+        if profile.get("path"):
+            lines.append(f"- Artifact: `{profile['path']}`")
+        if profile.get("source_summary"):
+            lines.append(f"- Source summary: `{profile['source_summary']}`")
+        if profile.get("validation_fitness") is not None:
+            lines.append(f"- Validation fitness: `{profile['validation_fitness']}`")
+        if profile.get("recommended_command_template"):
+            lines.extend(["- Command template:", "", "```sh", str(profile["recommended_command_template"]), "```", ""])
     lines.append("## Top Phase Recommendations")
     for item in report["phase_recommendations"][:10]:
         feature_index = int(item["feature_index"])
@@ -947,7 +1068,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     latest_training_analysis = _ensure_latest_training_analysis(runs)
     latest_run = _latest_run(runs)
     output_directory = latest_run.path.parent if latest_run else runs_dir
-    report = build_report(runs, output_directory, latest_training_analysis=latest_training_analysis)
+    report = build_report(
+        runs,
+        output_directory,
+        runs_dir,
+        latest_training_analysis=latest_training_analysis,
+    )
     if args.json:
         print(json.dumps(report, indent=2))
     else:
