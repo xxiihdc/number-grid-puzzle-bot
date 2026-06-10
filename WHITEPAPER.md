@@ -414,20 +414,26 @@ telemetry when available, falls back to generation-best chromosome weight and ma
 movement for older logs, correlates those directional changes with training and
 validation outcomes, and persists a read-only recommendation under
 `training_runs/weight-adjustment-recommendation-<timestamp>.json`. Recommendations are
-directional and should be validated with controlled follow-up runs. When an active
+directional and should be validated with controlled follow-up runs. Before building
+the recommendation, the script verifies that the newest selected training summary has
+`training_runs/analysis-<train-summary-stem>.json`; if missing, it runs the latest-run
+analyzer first and records the status in `latest_training_analysis`. When an active
 chromosome is available, the report also creates a ready-to-run candidate active model
 under `training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
-and prints the full training command for that isolated output directory. High-confidence
-weight deltas are applied to the candidate; mask changes remain advisory until a
-separate controlled experiment validates them.
+and prints the full training command for that isolated output directory.
+High-confidence weight deltas are applied to the candidate; mask changes remain
+advisory until a separate controlled experiment validates them.
 
 Recommender đọc các summary `training_runs/train-*.json`, phân tích telemetry toàn
 population khi có, fallback về biến động weight và mask của best chromosome theo
 generation với log cũ, đối chiếu hướng thay đổi với kết quả training và validation, rồi
 lưu recommendation read-only theo mẫu
 `training_runs/weight-adjustment-recommendation-<timestamp>.json`. Khuyến nghị là định
-hướng và cần được kiểm chứng bằng run có kiểm soát. Khi có active chromosome, report
-cũng tạo candidate active model có thể chạy ngay tại
+hướng và cần được kiểm chứng bằng run có kiểm soát. Trước khi tạo recommendation, script
+kiểm tra summary training mới nhất đã có
+`training_runs/analysis-<train-summary-stem>.json` chưa; nếu thiếu, nó chạy latest-run
+analyzer trước và ghi trạng thái vào `latest_training_analysis`. Khi có active
+chromosome, report cũng tạo candidate active model có thể chạy ngay tại
 `training_runs/experiment-adjusted-high-confidence-<timestamp>/active_chromosome.json`
 và in đầy đủ command training cho output directory tách biệt đó. Candidate chỉ áp dụng
 delta trọng số confidence cao; thay đổi mask vẫn là khuyến nghị tham khảo cho experiment

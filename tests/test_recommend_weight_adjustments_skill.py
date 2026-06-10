@@ -150,7 +150,25 @@ def test_missing_validation_is_reported_as_warning():
         assert any("validation_fitness" in warning for warning in warnings)
 
 
+def test_latest_analysis_preflight_detects_existing_handoff():
+    module = _load_module()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        runs_dir = Path(temp_dir)
+        summary_path = runs_dir / "train-newest.json"
+        _write_run(summary_path, "newest", [1.0, 2.0], [10.0, 11.0], 12.0)
+        analysis_path = runs_dir / "analysis-train-newest.json"
+        analysis_path.write_text(json.dumps({"report_type": "matrix_training_run_analysis"}), encoding="utf-8")
+
+        runs = module._load_runs([summary_path])
+        status = module._ensure_latest_training_analysis(runs)
+
+        assert status["status"] == "already_available"
+        assert status["summary_path"] == str(summary_path)
+        assert status["analysis_path"] == str(analysis_path)
+
+
 if __name__ == "__main__":
     test_recommends_increase_from_improving_weight_delta()
     test_missing_validation_is_reported_as_warning()
+    test_latest_analysis_preflight_detects_existing_handoff()
     print("PASS: weight adjustment recommendation skill checks")

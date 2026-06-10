@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 import shlex
 import statistics
+import subprocess
+import sys
 from typing import DefaultDict, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
@@ -86,6 +88,74 @@ def _load_runs(paths: Sequence[Path]) -> List[RunRecord]:
             str(run.path),
         ),
     )
+
+
+def _latest_run(runs: Sequence[RunRecord]) -> Optional[RunRecord]:
+    return runs[-1] if runs else None
+
+
+def _analysis_path_for_run(run: RunRecord) -> Path:
+    return run.path.with_name(f"analysis-{run.path.stem}.json")
+
+
+def _ensure_latest_training_analysis(runs: Sequence[RunRecord]) -> Dict[str, object]:
+    latest = _latest_run(runs)
+    if latest is None:
+        return {
+            "status": "unavailable",
+            "reason": "No parseable train-*.json summaries were found.",
+        }
+
+    analysis_path = _analysis_path_for_run(latest)
+    if analysis_path.exists():
+        return {
+            "status": "already_available",
+            "summary_path": str(latest.path),
+            "analysis_path": str(analysis_path),
+        }
+
+    skills_dir = Path(__file__).resolve().parents[2]
+    analyzer_path = (
+        skills_dir
+        / "matrix-analyze-latest-training-run"
+        / "scripts"
+        / "analyze_latest_training_run.py"
+    )
+    if not analyzer_path.exists():
+        return {
+            "status": "failed",
+            "summary_path": str(latest.path),
+            "analysis_path": str(analysis_path),
+            "reason": f"Analyzer script not found at {analyzer_path}.",
+        }
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(analyzer_path),
+            "--summary",
+            str(latest.path),
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return {
+            "status": "failed",
+            "summary_path": str(latest.path),
+            "analysis_path": str(analysis_path),
+            "returncode": result.returncode,
+            "stderr": result.stderr.strip(),
+            "stdout": result.stdout.strip(),
+        }
+
+    return {
+        "status": "created",
+        "summary_path": str(latest.path),
+        "analysis_path": str(analysis_path),
+    }
 
 
 def _chromosome_genes(chromosome: object) -> Dict[Tuple[int, int], GeneValue]:
@@ -675,7 +745,11 @@ def _build_candidate_experiment(
     }
 
 
-def build_report(runs: Sequence[RunRecord], output_directory: Path) -> Dict[str, object]:
+def build_report(
+    runs: Sequence[RunRecord],
+    output_directory: Path,
+    latest_training_analysis: Optional[Dict[str, object]] = None,
+) -> Dict[str, object]:
     created_at = datetime.now(timezone.utc).isoformat()
     has_population_telemetry = _has_population_telemetry(runs)
     evidence_scope = POPULATION_EVIDENCE_SCOPE if has_population_telemetry else EVIDENCE_SCOPE
@@ -722,6 +796,10 @@ def build_report(runs: Sequence[RunRecord], output_directory: Path) -> Dict[str,
             for run in runs
         ],
         "datasets": datasets,
+        "latest_training_analysis": latest_training_analysis or {
+            "status": "not_checked",
+            "reason": "build_report was called directly without preflight.",
+        },
         "global_assessment": {
             "confidence": confidence,
             "summary": (
@@ -768,8 +846,20 @@ def _render_markdown(report: Dict[str, object]) -> str:
         f"- Confidence: `{report['global_assessment']['confidence']}`",
         f"- Analysis path: `{report['analysis_path']}`",
         "",
-        "## Ready-To-Run Candidate",
+        "## Latest Training Analysis",
     ]
+    latest_analysis = report.get("latest_training_analysis", {})
+    if isinstance(latest_analysis, dict):
+        lines.append(f"- Status: `{latest_analysis.get('status', 'unknown')}`")
+        if latest_analysis.get("summary_path"):
+            lines.append(f"- Summary: `{latest_analysis['summary_path']}`")
+        if latest_analysis.get("analysis_path"):
+            lines.append(f"- Analysis: `{latest_analysis['analysis_path']}`")
+        if latest_analysis.get("reason"):
+            lines.append(f"- Reason: {latest_analysis['reason']}")
+        if latest_analysis.get("stderr"):
+            lines.append(f"- Analyzer stderr: `{latest_analysis['stderr']}`")
+    lines.extend(["", "## Ready-To-Run Candidate"])
     candidate = report.get("candidate_experiment", {})
     if isinstance(candidate, dict) and candidate.get("status") == "ready":
         lines.extend(
@@ -795,11 +885,7 @@ def _render_markdown(report: Dict[str, object]) -> str:
                 "",
             ]
         )
-    lines.extend(
-        [
-        "## Top Phase Recommendations",
-        ]
-    )
+    lines.append("## Top Phase Recommendations")
     for item in report["phase_recommendations"][:10]:
         feature_index = int(item["feature_index"])
         lines.append(
@@ -834,7 +920,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     runs_dir = Path(args.runs_dir)
     runs = _load_runs(_candidate_paths(args.summary, runs_dir))
-    report = build_report(runs, runs_dir)
+    latest_training_analysis = _ensure_latest_training_analysis(runs)
+    report = build_report(runs, runs_dir, latest_training_analysis=latest_training_analysis)
     if args.json:
         print(json.dumps(report, indent=2))
     else:

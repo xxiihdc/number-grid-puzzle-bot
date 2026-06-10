@@ -19,24 +19,38 @@ connects those movements to observed outcomes.
      --json
    ```
 
-2. The analyzer persists a versioned JSON report under:
+2. The recommender first checks whether the newest selected training summary already
+   has a latest-run analysis handoff:
+
+   ```text
+   training_runs/analysis-<train-summary-stem>.json
+   ```
+
+   If that file is missing, it invokes the `matrix-analyze-latest-training-run`
+   analyzer as a sub-skill step before building the weight recommendation. The
+   resulting recommendation includes a `latest_training_analysis` status of
+   `already_available`, `created`, `failed`, or `unavailable`.
+
+3. The analyzer persists a versioned JSON report under:
 
    ```text
    training_runs/weight-adjustment-recommendation-<timestamp>.json
    ```
 
-3. Use the persisted report for the user-facing answer. Preserve the distinction between
+4. Use the persisted report for the user-facing answer. Preserve the distinction between
    measured facts, directional recommendations, and caveats.
 
-4. Summarize:
+5. Summarize:
    - number of runs analyzed
+   - latest training analysis status and path
    - evidence scope
    - validation coverage and dataset comparability warnings
+   - ready-to-run candidate active model path and training command when available
    - highest-confidence phase/feature recommendations
    - mask recommendations
    - recommended next action
 
-5. If the report says validation coverage is weak, recommend validation replay or a
+6. If the report says validation coverage is weak, recommend validation replay or a
    controlled experiment before making aggressive manual weight changes.
 
 ## Evidence Scope
@@ -104,8 +118,10 @@ Require these top-level fields before consuming the payload:
 Main report sections:
 
 - `runs_analyzed`
+- `latest_training_analysis`
 - `datasets`
 - `global_assessment`
+- `candidate_experiment`
 - `phase_recommendations`
 - `mask_recommendations`
 - `recommended_next_action`
