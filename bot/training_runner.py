@@ -175,6 +175,54 @@ def _update_record(path: Path, record: Dict[str, object], **updates) -> None:
     _write_json_atomic(path, record)
 
 
+def _build_population_telemetry(evaluated: Sequence[Tuple[Chromosome, float]]) -> Dict[str, object]:
+    """Capture ranked population weights for downstream tuning analysis."""
+    ranked_candidates = [
+        {
+            "rank": rank,
+            "fitness": fitness,
+            "chromosome": chromosome.to_payload(),
+        }
+        for rank, (chromosome, fitness) in enumerate(evaluated, start=1)
+    ]
+    if not evaluated:
+        return {
+            "schema_version": 1,
+            "candidate_count": 0,
+            "ranked_candidates": [],
+            "gene_statistics": [],
+        }
+
+    first = evaluated[0][0]
+    gene_statistics = []
+    for phase_index in range(first.num_phases):
+        for feature_index in range(first.num_features):
+            weights = [
+                chromosome.genes[phase_index][feature_index].weight
+                for chromosome, _ in evaluated
+            ]
+            masks = [
+                chromosome.genes[phase_index][feature_index].mask
+                for chromosome, _ in evaluated
+            ]
+            gene_statistics.append({
+                "phase_index": phase_index,
+                "feature_index": feature_index,
+                "weight_min": min(weights),
+                "weight_mean": sum(weights) / len(weights),
+                "weight_max": max(weights),
+                "weight_stddev": statistics.pstdev(weights),
+                "mask_activation_ratio": sum(masks) / len(masks),
+            })
+
+    return {
+        "schema_version": 1,
+        "candidate_count": len(evaluated),
+        "ranked_candidates": ranked_candidates,
+        "gene_statistics": gene_statistics,
+    }
+
+
 def evaluate_training_watchdog(config: TrainingConfig,
                                generation_summaries: Sequence[Dict[str, object]]) -> WatchdogDecision:
     """Decide whether a completed training generation indicates an ineffective run."""
@@ -293,6 +341,7 @@ def run_training(config: TrainingConfig, output_directory: str = "training_runs"
                 "minimum_fitness": evaluated[-1][1],
                 "best_chromosome": evaluated[0][0].to_payload(),
                 "plateau_diagnostics": optimizer.get_plateau_diagnostics(),
+                "population_telemetry": _build_population_telemetry(evaluated),
             }
             if len(evaluated) != config.population_size:
                 raise RuntimeError("Incomplete generation cannot be committed")

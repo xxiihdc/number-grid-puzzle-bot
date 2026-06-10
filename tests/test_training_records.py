@@ -41,6 +41,19 @@ def test_short_run_writes_completed_summary():
         assert diagnostics["active_gene_count_average"] <= diagnostics["active_gene_count_max"]
         assert diagnostics["no_improvement_generations"] == 0
         assert diagnostics["adaptive_mutation_surge"] is False
+        telemetry = summary["generation_summaries"][0]["population_telemetry"]
+        assert telemetry["schema_version"] == 1
+        assert telemetry["candidate_count"] == 2
+        assert len(telemetry["ranked_candidates"]) == 2
+        assert telemetry["ranked_candidates"][0]["rank"] == 1
+        assert telemetry["ranked_candidates"][0]["fitness"] >= telemetry["ranked_candidates"][1]["fitness"]
+        assert telemetry["ranked_candidates"][0]["chromosome"]
+        assert telemetry["gene_statistics"]
+        first_stat = telemetry["gene_statistics"][0]
+        assert first_stat["phase_index"] == 0
+        assert first_stat["feature_index"] == 0
+        assert 0 <= first_stat["mask_activation_ratio"] <= 1
+        assert first_stat["weight_min"] <= first_stat["weight_mean"] <= first_stat["weight_max"]
 
 
 def _config_for(dataset_path):

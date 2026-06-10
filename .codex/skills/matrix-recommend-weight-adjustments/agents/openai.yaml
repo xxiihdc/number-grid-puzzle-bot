@@ -1,0 +1,3 @@
+display_name: Recommend Weight Adjustments
+short_description: Recommend next heuristic weight changes
+default_prompt: Analyze training-run weight changes and recommend next heuristic weight adjustments.

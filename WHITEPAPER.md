@@ -394,6 +394,35 @@ Nếu artifact đó đã tồn tại, analyzer cảnh báo và dừng thay vì g
 log cũ. Analyzer không sửa summary training, không promote weight hoặc tự khởi động
 training.
 
+### Recommend weight adjustments / Đề xuất chỉnh trọng số
+
+Human-readable report / Report cho người đọc:
+
+```sh
+python3 .codex/skills/matrix-recommend-weight-adjustments/scripts/recommend_weight_adjustments.py
+```
+
+Versioned JSON handoff for another agent / JSON có version để truyền cho agent khác:
+
+```sh
+python3 .codex/skills/matrix-recommend-weight-adjustments/scripts/recommend_weight_adjustments.py \
+  --json
+```
+
+The recommender reads saved `training_runs/train-*.json` summaries, analyzes population
+telemetry when available, falls back to generation-best chromosome weight and mask
+movement for older logs, correlates those directional changes with training and
+validation outcomes, and persists a read-only recommendation under
+`training_runs/weight-adjustment-recommendation-<timestamp>.json`. Recommendations are
+directional and should be validated with controlled follow-up runs.
+
+Recommender đọc các summary `training_runs/train-*.json`, phân tích telemetry toàn
+population khi có, fallback về biến động weight và mask của best chromosome theo
+generation với log cũ, đối chiếu hướng thay đổi với kết quả training và validation, rồi
+lưu recommendation read-only theo mẫu
+`training_runs/weight-adjustment-recommendation-<timestamp>.json`. Khuyến nghị là định
+hướng và cần được kiểm chứng bằng run có kiểm soát.
+
 ### Promote active weights / Chọn weight đang hoạt động
 
 ```sh
@@ -607,6 +636,7 @@ python3 tests/test_training_features.py
 python3 tests/benchmarks/test_training_feature_performance.py
 python3 tests/benchmarks/test_training_performance.py
 python3 tests/test_analyze_latest_training_run_skill.py
+python3 tests/test_recommend_weight_adjustments_skill.py
 ```
 
 `tests/test_training_parallel.py` and `tests/benchmarks/test_training_performance.py` use multiprocessing and
@@ -628,6 +658,7 @@ Các script chẩn đoán thủ công không assert hành vi ứng dụng nằm 
 | `training_data/*.json` | Reusable CRN datasets / Dataset CRN dùng lại |
 | `training_runs/train-*.json` | Incremental training summaries / Summary training tăng dần |
 | `training_runs/analysis-train-*.json` | Persisted analyzer handoffs / Handoff analyzer đã lưu |
+| `training_runs/weight-adjustment-recommendation-*.json` | Persisted weight-adjustment recommendations / Khuyến nghị chỉnh trọng số đã lưu |
 | `training_runs/active_chromosome.json` | Promoted local weights / Weight cục bộ đang dùng |
 | `training_runs/*.png` | Optional charts / Biểu đồ tùy chọn |
 | `training_runs/known-future-*.json` | Optional comparison reports / Report so sánh tùy chọn |
