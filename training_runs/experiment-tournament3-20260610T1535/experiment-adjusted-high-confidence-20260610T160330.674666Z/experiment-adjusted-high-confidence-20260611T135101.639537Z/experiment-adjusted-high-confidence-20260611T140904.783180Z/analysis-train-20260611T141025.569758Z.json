@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "report_type": "matrix_training_run_analysis",
+  "analysis_mode": "read_only",
+  "summary_path": "training_runs/experiment-tournament3-20260610T1535/experiment-adjusted-high-confidence-20260610T160330.674666Z/experiment-adjusted-high-confidence-20260611T135101.639537Z/experiment-adjusted-high-confidence-20260611T140904.783180Z/train-20260611T141025.569758Z.json",
+  "run_id": "train-20260611T141025.569758Z",
+  "status": "running",
+  "stop_reason": null,
+  "updated_at": "2026-06-11T14:30:30.305573+00:00",
+  "generation_count": 33,
+  "configured_generations": 40,
+  "population_size": 40,
+  "games_per_genome": 20,
+  "worker_count": 8,
+  "mutation_rate": 0.1,
+  "best_fitness": 591.0825342203191,
+  "validation_fitness": null,
+  "validation_gap": null,
+  "has_validation_dataset": true,
+  "best_generation": 16,
+  "recent_trend_window": 10,
+  "recent_best_fitness_delta": 0.0,
+  "initial_best_fitness": 585.4171496176103,
+  "total_best_fitness_delta": 5.665384602708741,
+  "improvement_generations": [
+    1,
+    16
+  ],
+  "total_generation_seconds": 1198.122672793,
+  "datasets": {
+    "training": {
+      "dataset_id": "train-10m",
+      "content_checksum": "sha256:ecc21009fb2eb5eb22084e628c193fc94814438aff0ff56a335b5903474f4b62"
+    },
+    "validation": {
+      "dataset_id": "validation-10m",
+      "content_checksum": "sha256:e56df4c2a5bd946b93f474856baf9949802fb5ac0f9b0df90bb46fe1d10ab313"
+    },
+    "overlap_report": {
+      "scenario_count": 0,
+      "scenario_ids": []
+    }
+  },
+  "plateau_diagnostics": {
+    "available": true,
+    "final_diversity_ratio": 1.0,
+    "minimum_diversity_ratio": 1.0,
+    "final_no_improvement_generations": 17,
+    "maximum_no_improvement_generations": 17,
+    "mutation_pulse_count": 7,
+    "mutation_pulse_generations": [
+      4,
+      8,
+      12,
+      19,
+      23,
+      27,
+      31
+    ],
+    "final_active_gene_count_min": 22,
+    "final_active_gene_count_average": 29.05,
+    "final_active_gene_count_max": 39
+  },
+  "active_model": {
+    "available": true,
+    "source_summary": "training_runs/experiment-tournament3-20260610T1535/experiment-adjusted-high-confidence-20260610T160330.674666Z/experiment-adjusted-high-confidence-20260611T135101.639537Z/weight-adjustment-recommendation-20260611T140904.783180Z.json",
+    "source_run_id": "weight-adjusted-high-confidence-candidate",
+    "same_as_analyzed_run": false,
+    "best_fitness": 598.9142769636463,
+    "validation_fitness": 531.3158480958133,
+    "candidate_training_fitness_delta": -7.831742743327254,
+    "candidate_validation_fitness_delta": null
+  },
+  "assessment": {
+    "plateau_status": "plateau_signal",
+    "validation_status": "dataset_available_replay_required",
+    "active_model_relation": "different_run",
+    "facts": [
+      "Run status is running.",
+      "Completed generations: 33 of 40.",
+      "Best training fitness: 591.0825.",
+      "Validation fitness: unavailable."
+    ],
+    "inferences": [
+      "The recent flat trend and current no-improvement streak are evidence of a plateau."
+    ],
+    "caveats": [
+      "Training fitness alone does not establish superiority on unseen scenarios.",
+      "A high chromosome diversity ratio shows that chromosomes differ; it does not prove useful exploration."
+    ]
+  },
+  "recommended_next_action": {
+    "action": "continue_monitoring",
+    "rationale": "The selected run is still active; avoid starting a competing experiment.",
+    "command": null,
+    "requires_explicit_user_request": false
+  },
+  "recommendation": "The selected run is still active; avoid starting a competing experiment.",
+  "analysis_path": "training_runs/experiment-tournament3-20260610T1535/experiment-adjusted-high-confidence-20260610T160330.674666Z/experiment-adjusted-high-confidence-20260611T135101.639537Z/experiment-adjusted-high-confidence-20260611T140904.783180Z/analysis-train-20260611T141025.569758Z.json"
+}

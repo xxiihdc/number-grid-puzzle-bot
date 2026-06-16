@@ -18,7 +18,7 @@ from scoring import evaluate_board
 
 
 def run_play_mode():
-    """Run one normal puzzle with the newest promoted chromosome when available."""
+    """Run one normal puzzle with the currently promoted chromosome when available."""
     print("Number Grid Puzzle Bot Initializing...")
     print("=" * 50)
 
@@ -30,13 +30,12 @@ def run_play_mode():
 
     # Initialize Expectimax search
     search_engine = ExpectimaxSearch(feature_pool)
-    from training_weights import load_active_chromosome, sync_latest_weights
+    from training_weights import ACTIVE_MODEL_PATH, load_active_chromosome
 
-    active_path = sync_latest_weights()
     active_chromosome = load_active_chromosome()
     if active_chromosome is not None:
         search_engine.set_chromosome(active_chromosome)
-        print(f"Loaded active trained chromosome: {active_path}")
+        print(f"Loaded active trained chromosome: {ACTIVE_MODEL_PATH}")
 
     print("Starting puzzle solving...")
     play_game(game_state, search_engine)

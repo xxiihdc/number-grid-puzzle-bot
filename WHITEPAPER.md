@@ -291,6 +291,14 @@ python3 run_bot.py
 python3 run_bot.py play
 ```
 
+Play mode is load-only for weights: it reads the currently promoted local model at
+`training_runs/active_chromosome.json` and does not auto-sync from training summaries.
+Changing gameplay weights is an explicit promote/copy operation.
+
+Mode chơi chỉ load weight: nó đọc model cục bộ đang được chọn tại
+`training_runs/active_chromosome.json` và không tự sync từ summary training. Muốn đổi
+weight dùng khi chơi thì phải promote/copy rõ ràng.
+
 ### Scripted training / Training bằng command đầy đủ
 
 ```sh
@@ -448,17 +456,63 @@ profile tốt nhất thay vì quay về command hardcode.
 
 ### Promote active weights / Chọn weight đang hoạt động
 
+Play mode loads only `training_runs/active_chromosome.json`; it does not call
+`sync_latest_weights()` automatically. To apply a validated candidate to one-game
+runtime, copy the chosen `active_chromosome.json` into that root active-model path.
+
+Mode chơi chỉ load `training_runs/active_chromosome.json`; nó không tự gọi
+`sync_latest_weights()`. Để áp dụng candidate đã validation cho runtime một ván, copy
+file `active_chromosome.json` đã chọn vào root active-model path này.
+
+Best-known profile evidence is persisted at:
+
+```sh
+cat training_runs/best_known_training_profile.json
+```
+
+As of the current validated run history, the strongest known validation profile points
+to `training_runs/experiment-watchdog-relaxed-20260610T1320/active_chromosome.json`
+with validation fitness `548.7446`. Apply it to play mode with:
+
+```sh
+cp training_runs/experiment-watchdog-relaxed-20260610T1320/active_chromosome.json \
+  training_runs/active_chromosome.json
+```
+
+Bằng chứng best-known profile được lưu tại:
+
+```sh
+cat training_runs/best_known_training_profile.json
+```
+
+Theo lịch sử validation hiện tại, profile mạnh nhất đang trỏ tới
+`training_runs/experiment-watchdog-relaxed-20260610T1320/active_chromosome.json` với
+validation fitness `548.7446`. Áp dụng nó cho mode chơi bằng:
+
+```sh
+cp training_runs/experiment-watchdog-relaxed-20260610T1320/active_chromosome.json \
+  training_runs/active_chromosome.json
+```
+
+The sync script remains available for an explicit operator-driven promotion of the
+newest root-level training summary containing a best chromosome:
+
 ```sh
 python3 scripts/sync_latest_weights.py
 ```
 
-The newest run summary containing a best chromosome is promoted into
-`training_runs/active_chromosome.json`. Validate promising candidates before trusting
-them in production-like comparisons.
+Use it only when you intentionally want that latest-summary policy. Validate promising
+candidates before trusting them in production-like comparisons.
 
-Summary mới nhất có best chromosome sẽ được đưa vào
-`training_runs/active_chromosome.json`. Hãy validation candidate tốt trước khi tin cậy
-trong các so sánh quan trọng.
+Script sync vẫn có sẵn để operator chủ động promote summary training cấp root mới nhất
+có best chromosome:
+
+```sh
+python3 scripts/sync_latest_weights.py
+```
+
+Chỉ dùng khi thật sự muốn policy chọn latest-summary đó. Hãy validation candidate tốt
+trước khi tin cậy trong các so sánh quan trọng.
 
 ### Known-future comparison / So sánh với baseline biết trước block
 
